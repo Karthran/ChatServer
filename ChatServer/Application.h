@@ -95,11 +95,14 @@ private:
 
     auto onCheckSize(const std::string& in_message, std::string& out_message, int thread_num) const -> void;
     auto onCheckName(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onCheckLogin(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onRegistration(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onError(std::string& out_message) const -> void;
 
     /////////////////////////DEBUG//////////////////////////////
-    auto checkName(const std::string& name) -> const std::string;
-    /////////////////////////DEBUG//////////////////////////////
+    auto checkName(const std::string& user_name) -> const std::string;
+    auto checkLogin(const std::string& user_login) -> const std::string;
+    auto registration(const std::string& reg_string) -> const std::string;
 
 };

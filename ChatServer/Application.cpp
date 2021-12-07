@@ -9,7 +9,6 @@
 #include "Server.h"
 #include "core.h"
 
-
 #include "Chat.h"
 #include "Message.h"
 #include "Utils.h"
@@ -29,6 +28,10 @@ auto Application::run() -> void
 {
     Utils::printOSVersion();
 
+    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
+
+    load();
+
     _server = new Server(this);
     _server->run();
 
@@ -43,29 +46,24 @@ auto Application::run() -> void
         }
     }
 
+    save();
+
     return;
 
+    //auto isContinue{true};
+    //while (isContinue)
+    //{
+    //    std::string menu_arr[]{"Main menu:", "Sign In", "Create account", "Quit"};
 
-    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
+    //    auto menu_item{menu(menu_arr, 4)};
 
-    load();
-
-    auto isContinue{true};
-    while (isContinue)
-    {
-        std::string menu_arr[]{"Main menu:", "Sign In", "Create account", "Quit"};
-
-        auto menu_item{menu(menu_arr, 4)};
-
-        switch (menu_item)
-        {
-            case 1: signIn(); break;
-            case 2: createAccount(); break;
-            default: isContinue = false; break;
-        }
-    }
-
-    save();
+    //    switch (menu_item)
+    //    {
+    //        case 1: signIn(); break;
+    //        case 2: createAccount(); break;
+    //        default: isContinue = false; break;
+    //    }
+    //}
 }
 
 auto Application::createAccount() -> int
@@ -152,15 +150,15 @@ auto Application::createAccount_inputPassword(std::string& user_password) const 
 
         if (user_password.empty()) continue;
 
-        //std::cout << std::endl << "Re-enter your password: ";
-        //std::cout << BOLDGREEN;
+        // std::cout << std::endl << "Re-enter your password: ";
+        // std::cout << BOLDGREEN;
 
         std::string check_user_password;
-//        Utils::getBoundedString(check_user_password, MAX_INPUT_SIZE, true);
-        
+        //        Utils::getBoundedString(check_user_password, MAX_INPUT_SIZE, true);
+
         Utils::getPassword(check_user_password, "Re-enter your password: ");
 
-       // std::cout << RESET;
+        // std::cout << RESET;
         if (user_password != check_user_password)
         {
             std::cout << std::endl << RED << "Password don't match!" << RESET;
@@ -222,10 +220,10 @@ auto Application::signIn_inputLogin(std::string& user_login) const -> int
 }
 auto Application::signIn_inputPassword(std::string& user_password) const -> void
 {
-    //std::cout << RESET << "Password:";
-    //std::cout << BOLDGREEN;
-    //Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
-    //std::cout << RESET << std::endl;
+    // std::cout << RESET << "Password:";
+    // std::cout << BOLDGREEN;
+    // Utils::getBoundedString(user_password, MAX_INPUT_SIZE, true);
+    // std::cout << RESET << std::endl;
 
     Utils::getPassword(user_password, "Password: ");
 }
@@ -784,21 +782,23 @@ auto Application::reaction(const std::string& in_message, std::string& out_messa
     std::string code_operation_string;
     std::stringstream stream(in_message);
     stream >> code_operation_string;
-    //std::cout << "CODE: " << code_operation_string << std::endl;
-    try {
+    // std::cout << "CODE: " << code_operation_string << std::endl;
+    try
+    {
         auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
         switch (code_operation)
         {
-        case OperationCode::STOP: onStop(in_message, out_message, thread_num); break;
-        case OperationCode::CHECK_SIZE: onCheckSize(in_message, out_message, thread_num); break;
-        case OperationCode::CHECK_NAME: onCheckName(in_message, out_message, thread_num); break;
-        case OperationCode::CHECK_LOGIN: break;
-        case OperationCode::REGISTRATION: break;
-        case OperationCode::SIGN_IN: break;
-        default: return onError(out_message); break;
+            case OperationCode::STOP: onStop(in_message, out_message, thread_num); break;
+            case OperationCode::CHECK_SIZE: onCheckSize(in_message, out_message, thread_num); break;
+            case OperationCode::CHECK_NAME: onCheckName(in_message, out_message, thread_num); break;
+            case OperationCode::CHECK_LOGIN: onCheckLogin(in_message, out_message, thread_num); break;
+            case OperationCode::REGISTRATION: onRegistration(in_message, out_message, thread_num); break;
+            case OperationCode::SIGN_IN: break;
+            default: return onError(out_message); break;
         }
     }
-    catch (const std::invalid_argument& e) {
+    catch (const std::invalid_argument& e)
+    {
         //    throw NoNumber(input);
         out_message = in_message;
     }
@@ -810,9 +810,9 @@ auto Application::onCheckSize(const std::string& in_message, std::string& out_me
     std::stringstream stream(in_message);
     stream >> size_string >> size_string;
 
-    //std::cout << "SIZE: " << size_string << std::endl;
+    // std::cout << "SIZE: " << size_string << std::endl;
 
-    auto message_length{ std::stoi(size_string) };
+    auto message_length{std::stoi(size_string)};
 
     _server->setBufferSize(thread_num, message_length + HEADER_SIZE);
 
@@ -828,32 +828,119 @@ auto Application::onCheckName(const std::string& in_message, std::string& out_me
     auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
     switch (code_operation)
     {
-    case OperationCode::CHECK_SIZE:
-    {
-
-        auto msg{ checkName(name) };
-        _server->setCashMessage(checkName(name), thread_num);
-        out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
-        break;
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{checkName(name)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY:
+            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
+            break;
+        default: return onError(out_message); break;
     }
-    case OperationCode::READY:
-        out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */_server->getCashMessage(thread_num);
-        break;
-    default: return onError(out_message); break;
-    }
-
 }
 
-auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void {}
+auto Application::onCheckLogin(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string;
+    std::string login;
+    std::stringstream stream(in_message);
+    stream >> code_operation_string >> code_operation_string >> login;
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+
+            auto msg{checkLogin(login)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY:
+            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
+            break;
+        default: return onError(out_message); break;
+    }
+}
+
+auto Application::onRegistration(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::cout << "onRegistration: " << in_message << std::endl;
+
+
+    std::string code_operation_string;
+    std::string reg_string, name, login, password;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> name >> login >> password;
+    reg_string = name + " " + login + " " + password;
+    std::cout << "onRegistration: " << reg_string << std::endl;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{registration(reg_string)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY:
+            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
+            break;
+        default: return onError(out_message); break;
+    }
+}
+
+auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void {
+    std::cout << "Client thread stop: " << thread_num << std::endl;
+}
 
 auto Application::onError(std::string& out_message) const -> void
 {
-    out_message = std::to_string(static_cast<int>(OperationCode::ERROR)) + " " + "ERROR";
+    out_message = std::to_string(static_cast<int>(OperationCode::ERROR)) + " " + RETURN_ERROR;
 }
 
-auto Application::checkName(const std::string& name) -> const std::string
+auto Application::checkName(const std::string& user_name) -> const std::string
 {
-    if (name == "Jhon") return "OK";
-    return "ERROR";
+    const std::string& (User::*get_name)() const = &User::getUserName;
+    if (user_name.empty() || checkingForStringExistence(user_name, get_name) != UNSUCCESSFUL) return RETURN_ERROR;
+    return RETURN_OK;
 }
 
+auto Application::checkLogin(const std::string& user_login) -> const std::string
+{
+    const std::string& (User::*get_login)() const = &User::getUserLogin;
+    if (user_login.empty() || checkingForStringExistence(user_login, get_login) != UNSUCCESSFUL) return RETURN_ERROR;
+
+    return RETURN_OK ;
+}
+
+auto Application::registration(const std::string& reg_string) -> const std::string
+{
+    std::stringstream stream(reg_string);
+    std::string name, login, password;
+    stream >> name >> login >> password;
+    std::cout << "reg: " << name << " " << login << " " << password << std::endl;
+
+    const std::string& (User::*get_name)() const = &User::getUserName;
+    if (name.empty() || checkingForStringExistence(name, get_name) != UNSUCCESSFUL) return RETURN_ERROR + " " + "NAME";
+
+    const std::string& (User::*get_login)() const = &User::getUserLogin;
+    if (login.empty() || checkingForStringExistence(login, get_login) != UNSUCCESSFUL) return RETURN_ERROR + " " + "LOGIN";
+
+    _user_array.push_back(std::make_shared<User>(name, login, _current_user_number));
+
+    _new_messages_array.push_back(std::make_shared<NewMessages>());
+
+    const std::string salt = getSalt();
+    std::shared_ptr<PasswordHash> password_hash = sha1(password, salt);
+    _password_hash[login] = password_hash;
+    ++_current_user_number;
+    
+    return RETURN_OK;
+}
