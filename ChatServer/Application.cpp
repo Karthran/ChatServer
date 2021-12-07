@@ -793,7 +793,7 @@ auto Application::reaction(const std::string& in_message, std::string& out_messa
             case OperationCode::CHECK_NAME: onCheckName(in_message, out_message, thread_num); break;
             case OperationCode::CHECK_LOGIN: onCheckLogin(in_message, out_message, thread_num); break;
             case OperationCode::REGISTRATION: onRegistration(in_message, out_message, thread_num); break;
-            case OperationCode::SIGN_IN: break;
+            case OperationCode::SIGN_IN: onSignIn(in_message, out_message, thread_num); break;
             default: return onError(out_message); break;
         }
     }
@@ -868,15 +868,12 @@ auto Application::onCheckLogin(const std::string& in_message, std::string& out_m
 
 auto Application::onRegistration(const std::string& in_message, std::string& out_message, int thread_num) -> void
 {
-    std::cout << "onRegistration: " << in_message << std::endl;
-
     std::string code_operation_string;
     std::string reg_string, name, login, password;
     std::stringstream stream(in_message);
 
     stream >> code_operation_string >> code_operation_string >> name >> login >> password;
     reg_string = name + " " + login + " " + password;
-    std::cout << "onRegistration: " << reg_string << std::endl;
 
     auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
     switch (code_operation)
@@ -895,6 +892,32 @@ auto Application::onRegistration(const std::string& in_message, std::string& out
     }
 }
 
+auto Application::onSignIn(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string;
+    std::string signin_string, login, password;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> login >> password;
+    signin_string = login + " " + password;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{signin(signin_string, thread_num)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY:
+            out_message = _server->getCashMessage(thread_num);
+            break;
+        default: return onError(out_message); break;
+    }
+}
+
 auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void
 {
     std::cout << "Client thread stop: " << thread_num << std::endl;
@@ -902,6 +925,8 @@ auto Application::onStop(const std::string& in_message, std::string& out_message
 
 auto Application::onError(std::string& out_message) const -> void
 {
+    std::cout << "Operation Error! " << std::endl;
+
     out_message = std::to_string(static_cast<int>(OperationCode::ERROR)) + " " + RETURN_ERROR;
 }
 
@@ -925,7 +950,6 @@ auto Application::registration(const std::string& reg_string) -> const std::stri
     std::stringstream stream(reg_string);
     std::string name, login, password;
     stream >> name >> login >> password;
-    std::cout << "reg: " << name << " " << login << " " << password << std::endl;
 
     const std::string& (User::*get_name)() const = &User::getUserName;
     if (name.empty() || checkingForStringExistence(name, get_name) != UNSUCCESSFUL) return RETURN_ERROR + " " + "NAME";
@@ -943,4 +967,33 @@ auto Application::registration(const std::string& reg_string) -> const std::stri
     ++_current_user_number;
 
     return RETURN_OK;
+}
+
+auto Application::signin(const std::string& signin_string, int thread_num) -> const std::string
+{
+    std::stringstream stream(signin_string);
+    std::string user_login, user_password;
+    stream >> user_login >> user_password;
+
+    const std::string& (User::*get_login)() const = &User::getUserLogin;
+    auto index{checkingForStringExistence(user_login, get_login)};
+
+    if (index != UNSUCCESSFUL)
+    {
+        auto it = _password_hash.find(user_login);
+        std::shared_ptr<PasswordHash> password_hash = sha1(user_password, it->second->getSalt());
+        auto password_match{true};
+        for (auto i{0}; i < SHA1HASHLENGTHUINTS; ++i)
+        {
+            if (it->second->getHash() == password_hash->getHash()) continue;
+            password_match = false;
+            break;
+        }
+        if (password_match)
+        {
+            _signed_user.push_back(thread_num); // Set client authorization
+            return RETURN_OK;
+        }
+    }
+    return RETURN_ERROR;
 }

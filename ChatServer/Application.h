@@ -38,6 +38,8 @@ private:
 
     Server* _server{ nullptr };
 
+    std::vector<int> _signed_user{};
+
     auto createAccount() -> int;
     auto createAccount_inputName(std::string& name) const -> void;
     auto createAccount_inputLogin(std::string& login) const -> void;
@@ -97,6 +99,7 @@ private:
     auto onCheckName(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onCheckLogin(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onRegistration(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onSignIn(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onError(std::string& out_message) const -> void;
 
@@ -104,5 +107,5 @@ private:
     auto checkName(const std::string& user_name) -> const std::string;
     auto checkLogin(const std::string& user_login) -> const std::string;
     auto registration(const std::string& reg_string) -> const std::string;
-
+    auto signin(const std::string& signin_string, int thread_num) -> const std::string;
 };
