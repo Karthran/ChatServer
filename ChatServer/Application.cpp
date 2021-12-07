@@ -50,8 +50,8 @@ auto Application::run() -> void
 
     return;
 
-    //auto isContinue{true};
-    //while (isContinue)
+    // auto isContinue{true};
+    // while (isContinue)
     //{
     //    std::string menu_arr[]{"Main menu:", "Sign In", "Create account", "Quit"};
 
@@ -870,7 +870,6 @@ auto Application::onRegistration(const std::string& in_message, std::string& out
 {
     std::cout << "onRegistration: " << in_message << std::endl;
 
-
     std::string code_operation_string;
     std::string reg_string, name, login, password;
     std::stringstream stream(in_message);
@@ -896,7 +895,8 @@ auto Application::onRegistration(const std::string& in_message, std::string& out
     }
 }
 
-auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void {
+auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
     std::cout << "Client thread stop: " << thread_num << std::endl;
 }
 
@@ -917,7 +917,7 @@ auto Application::checkLogin(const std::string& user_login) -> const std::string
     const std::string& (User::*get_login)() const = &User::getUserLogin;
     if (user_login.empty() || checkingForStringExistence(user_login, get_login) != UNSUCCESSFUL) return RETURN_ERROR;
 
-    return RETURN_OK ;
+    return RETURN_OK;
 }
 
 auto Application::registration(const std::string& reg_string) -> const std::string
@@ -941,6 +941,6 @@ auto Application::registration(const std::string& reg_string) -> const std::stri
     std::shared_ptr<PasswordHash> password_hash = sha1(password, salt);
     _password_hash[login] = password_hash;
     ++_current_user_number;
-    
+
     return RETURN_OK;
 }
