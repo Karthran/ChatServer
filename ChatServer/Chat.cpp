@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <exception>
 #include <map>
+#include <sstream>
 
 #include "Chat.h"
 #include "Message.h"
@@ -20,47 +21,44 @@ Chat::~Chat()
     /*std::cout << "Chat destr " << this << std::endl;*/
 }
 
-auto Chat::printMessages(int first_index, int number) const -> void
+auto Chat::printMessages(int first_index, int number, std::string& messages) const -> void
 {
+    std::stringstream stream;
 
     for (auto i{first_index}; i < number; ++i)
     {
-        printMessage(i);
-        if (!((i + 1) % MESSAGES_ON_PAGE))
-        {
-            std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
-            std::cin.get();  // Suspend via MESSAGES_ON_PAGE messages
-        }
+        printMessage(i, stream);
     }
+    messages = stream.str();
 }
 
-auto Chat::printMessage(int message_index) const -> void
+auto Chat::printMessage(int message_index, std::stringstream& stream) const -> void
 {
 
     auto message{_message_array[message_index]};
 
     const tm& timeinfo{message->getMessageCreationTime()};
 
-    std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
-    std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message_index + 1 << "."
+    stream << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+    stream << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << message_index + 1 << "."
               << RESET;  // array's indices begin from 0, Output indices begin from 1
-    std::cout << YELLOW << "  Created: ";
-    std::cout << BOLDYELLOW << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << message->getUser()->getUserName();
-    std::cout << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
+    stream << YELLOW << "  Created: ";
+    stream << BOLDYELLOW << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << message->getUser()->getUserName();
+    stream << std::setw(20) << std::setfill(' ') << RESET << YELLOW;
 
-    Utils::printTimeAndData(timeinfo);
+    Utils::printTimeAndData(timeinfo, stream);
 
-    std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
-    std::cout << BOLDYELLOW << message->getMessage() << RESET << std::endl;
+    stream << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+    stream << BOLDYELLOW << message->getMessage() << RESET << std::endl;
 
     if (message->isEdited())
     {
         const tm& edit_timeinfo{message->getMessageEditingTime()};
-        std::cout << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
-        std::cout << YELLOW << "Edited: ";
-        Utils::printTimeAndData(edit_timeinfo);
+        stream << CYAN << std::setw(120) << std::setfill('-') << "-" << std::endl;
+        stream << YELLOW << "Edited: ";
+        Utils::printTimeAndData(edit_timeinfo, stream);
     }
-    std::cout << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << RESET << std::endl;
+    stream << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << RESET << std::endl;
 }
 
 auto Chat::addMessage(const std::shared_ptr<User>& user) -> const std::shared_ptr<Message>
@@ -101,7 +99,7 @@ auto Chat::deleteMessage(const std::shared_ptr<User>& user, int message_index) -
     {
         if (user != _message_array.at(message_index)->getUser()) return std::make_shared<Message>();
 
-        printMessage(message_index);
+//      printMessage(message_index);
 
         std::cout << BOLDYELLOW << "Delete message?(Y/N):" << BOLDGREEN;
         if (!Utils::isOKSelect()) return std::make_shared<Message>();
@@ -127,7 +125,7 @@ auto Chat::editMessage(const std::shared_ptr<User>& user, int message_index) -> 
     {
         if (user != _message_array.at(message_index)->getUser()) return std::make_shared<Message>();
 
-        printMessage(message_index);
+ //       printMessage(message_index);
 
         std::string new_message{};
 

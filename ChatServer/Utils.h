@@ -1,5 +1,7 @@
 #pragma once
 #include <string>
+#include <sstream>
+
 
 #ifdef _WIN32
 const std::string RESET = "";
@@ -44,7 +46,7 @@ const std::string BOLDWHITE = "\033[1m\033[37m";   /* Bold White */
 
 const std::string RETURN_ERROR = "ERROR";
 const std::string RETURN_OK = "OK";
-
+const std::string DELIMITER = " ";
 const int MAX_INPUT_SIZE = 30;
 const int UNSUCCESSFUL = -1;
 const int SUCCESSFUL = 1;
@@ -58,7 +60,7 @@ class Utils
 public:
     static auto isOKSelect() -> bool;
     static auto inputIntegerValue() -> int;
-    static auto printTimeAndData(const tm& timeinfo) -> void;
+    static auto printTimeAndData(const tm& timeinfo, std::stringstream& stream) -> void;
     //    static auto getBoundedString(std::string& string, int size, bool hidden = false) -> void;
     static auto getString(std::string& string, size_t size = 0) -> void;
     static auto getPassword(std::string& string, const std::string& text) -> void;

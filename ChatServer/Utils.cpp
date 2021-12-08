@@ -46,15 +46,15 @@ auto Utils::inputIntegerValue() -> int
     }
 }
 
-auto Utils::printTimeAndData(const tm& timeinfo) -> void
+auto Utils::printTimeAndData(const tm& timeinfo, std::stringstream& stream) -> void
 {
-    std::cout << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_hour << ":";
-    std::cout << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_min << ":";
-    std::cout << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_sec << "   ";
+    stream << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_hour << ":";
+    stream << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_min << ":";
+    stream << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_sec << "   ";
 
-    std::cout << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_mday << "/";
-    std::cout << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_mon + 1 << "/";
-    std::cout << timeinfo.tm_year + 1900 << std::endl;
+    stream << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_mday << "/";
+    stream << std::setw(2) << std::setfill('0') << std::right << timeinfo.tm_mon + 1 << "/";
+    stream << timeinfo.tm_year + 1900 << std::endl;
 }
 
 // auto Utils::getBoundedString(std::string& string, int size, bool hidden) -> void

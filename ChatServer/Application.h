@@ -100,6 +100,10 @@ private:
     auto onCheckLogin(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onRegistration(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onSignIn(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onNewMessages(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onGetNumberMessagesInChat(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onCommonChatGetMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+
     auto onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     auto onError(std::string& out_message) const -> void;
 
@@ -108,4 +112,7 @@ private:
     auto checkLogin(const std::string& user_login) -> const std::string;
     auto registration(const std::string& reg_string) -> const std::string;
     auto signin(const std::string& signin_string, int thread_num) -> const std::string;
+    auto newmessages(const std::string& user_index) -> const std::string;
+    auto getNumberMessagesInChat(const std::string& msg_in_chat) -> std::string;
+    auto commonChatGetMessage(const std::string& message_index) -> std::string;
 };

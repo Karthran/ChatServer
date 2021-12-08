@@ -28,7 +28,9 @@ auto Application::run() -> void
 {
     Utils::printOSVersion();
 
-    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat!" << RESET << std::endl;
+    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat Dedicated Server!" << RESET << std::endl;
+
+    std::cout << "Type 'end' and press Enter for quit!" << std::endl;
 
     load();
 
@@ -267,7 +269,7 @@ auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
         {
             case 1:
                 std::cout << std::endl;
-                _common_chat->printMessages(0, _common_chat->getCurrentMessageNum());
+                //               _common_chat->printMessages(0, _common_chat->getCurrentMessageNum());
                 break;
             case 2: commonChat_addMessage(user); break;
             case 3: commonChat_editMessage(user); break;
@@ -335,8 +337,7 @@ auto Application::privateMenu_viewUsersNames() const -> void
     for (auto i{0}; i < _current_user_number; ++i)
     {
         std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << i + 1 << "." << BOLDYELLOW << std::setw(MAX_INPUT_SIZE)
-                  << std::setfill(' ') << std::left << _user_array[i]->getUserName()
-                  << std::endl;  // array's indices begin from 0, Output indices begin from 1
+                  << std::setfill(' ') << std::left << _user_array[i]->getUserName() << std::endl;  // array's indices begin from 0, Output indices begin from 1
         if (!((i + 1) % LINE_TO_PAGE))
         {
             std::cout << std::endl << RESET << YELLOW << "Press Enter for continue...";
@@ -399,9 +400,9 @@ auto Application::printNewMessagesUsers(const std::shared_ptr<User>& user) -> vo
             auto userID{new_message->getUserID(i)};
             auto msg_vector{new_message->getMessages(userID)};
             auto msg_number{msg_vector.size()};
-            std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << userID + 1 << "." << BOLDYELLOW
-                      << std::setw(MAX_INPUT_SIZE) << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET << GREEN
-                      << "(" << msg_number << " new message(s))" << std::endl;  // array's indices begin from 0, Output indices begin from 1
+            std::cout << BOLDGREEN << std::setw(5) << std::setfill(' ') << std::right << userID + 1 << "." << BOLDYELLOW << std::setw(MAX_INPUT_SIZE)
+                      << std::setfill(' ') << std::left << _user_array[userID]->getUserName() << RESET << GREEN << "(" << msg_number << " new message(s))"
+                      << std::endl;  // array's indices begin from 0, Output indices begin from 1
         }
     }
 }
@@ -424,7 +425,7 @@ auto Application::privateChat(const std::shared_ptr<User>& source_user, const st
                 if (currentChat.get()->isInitialized())
                 {
                     std::cout << std::endl;
-                    currentChat->printMessages(0, currentChat->getCurrentMessageNum());
+                    //                   currentChat->printMessages(0, currentChat->getCurrentMessageNum());
 
                     auto new_message{_new_messages_array[source_user->getUserID()]};
                     auto msg_vector{new_message->getMessages(target_user->getUserID())};
@@ -444,8 +445,8 @@ auto Application::privateChat(const std::shared_ptr<User>& source_user, const st
     return 0;
 }
 
-auto Application::privateChat_addMessage(
-    const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat) -> void
+auto Application::privateChat_addMessage(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, std::shared_ptr<Chat>& chat)
+    -> void
 {
     if (!chat->isInitialized())
     {
@@ -507,8 +508,7 @@ auto Application::privateChat_deleteMessage(
     }
 }
 
-auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const
-    -> const std::shared_ptr<Chat>
+auto Application::getPrivateChat(const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user) const -> const std::shared_ptr<Chat>
 {
     long long first_userID{source_user->getUserID()};
     long long second_userID{target_user->getUserID()};
@@ -794,6 +794,9 @@ auto Application::reaction(const std::string& in_message, std::string& out_messa
             case OperationCode::CHECK_LOGIN: onCheckLogin(in_message, out_message, thread_num); break;
             case OperationCode::REGISTRATION: onRegistration(in_message, out_message, thread_num); break;
             case OperationCode::SIGN_IN: onSignIn(in_message, out_message, thread_num); break;
+            case OperationCode::NEW_MESSAGES: onNewMessages(in_message, out_message, thread_num); break;
+            case OperationCode::GET_NUMBER_MESSAGES_IN_CHAT: onGetNumberMessagesInChat(in_message, out_message, thread_num); break;
+            case OperationCode::COMMON_CHAT_GET_MESSAGE: onCommonChatGetMessage(in_message, out_message, thread_num); break;
             default: return onError(out_message); break;
         }
     }
@@ -832,12 +835,10 @@ auto Application::onCheckName(const std::string& in_message, std::string& out_me
         {
             auto msg{checkName(name)};
             _server->setCashMessage(msg, thread_num);
-            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
             break;
         }
-        case OperationCode::READY:
-            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
-            break;
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
         default: return onError(out_message); break;
     }
 }
@@ -856,12 +857,10 @@ auto Application::onCheckLogin(const std::string& in_message, std::string& out_m
 
             auto msg{checkLogin(login)};
             _server->setCashMessage(msg, thread_num);
-            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
             break;
         }
-        case OperationCode::READY:
-            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
-            break;
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
         default: return onError(out_message); break;
     }
 }
@@ -873,7 +872,7 @@ auto Application::onRegistration(const std::string& in_message, std::string& out
     std::stringstream stream(in_message);
 
     stream >> code_operation_string >> code_operation_string >> name >> login >> password;
-    reg_string = name + " " + login + " " + password;
+    reg_string = name + DELIMITER + login + DELIMITER + password;
 
     auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
     switch (code_operation)
@@ -882,12 +881,10 @@ auto Application::onRegistration(const std::string& in_message, std::string& out
         {
             auto msg{registration(reg_string)};
             _server->setCashMessage(msg, thread_num);
-            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
             break;
         }
-        case OperationCode::READY:
-            out_message = /*std::to_string(static_cast<int>(OperationCode::CHECK_NAME)) + " " + */ _server->getCashMessage(thread_num);
-            break;
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
         default: return onError(out_message); break;
     }
 }
@@ -899,7 +896,7 @@ auto Application::onSignIn(const std::string& in_message, std::string& out_messa
     std::stringstream stream(in_message);
 
     stream >> code_operation_string >> code_operation_string >> login >> password;
-    signin_string = login + " " + password;
+    signin_string = login + DELIMITER + password;
 
     auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
     switch (code_operation)
@@ -908,12 +905,80 @@ auto Application::onSignIn(const std::string& in_message, std::string& out_messa
         {
             auto msg{signin(signin_string, thread_num)};
             _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
+        default: return onError(out_message); break;
+    }
+}
+
+auto Application::onNewMessages(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string;
+    std::string string, user_index;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> user_index;
+    string = user_index;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{newmessages(string)};
+            _server->setCashMessage(msg, thread_num);
             out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
             break;
         }
-        case OperationCode::READY:
-            out_message = _server->getCashMessage(thread_num);
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
+        default: return onError(out_message); break;
+    }
+}
+
+auto Application::onGetNumberMessagesInChat(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string;
+    std::string chat_id_string, first_user, second_user;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> first_user >> second_user;
+    chat_id_string = first_user + DELIMITER + second_user;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{getNumberMessagesInChat(chat_id_string)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
             break;
+        }
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
+        default: return onError(out_message); break;
+    }
+}
+
+auto Application::onCommonChatGetMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string, index_string;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> index_string;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{commonChatGetMessage(index_string)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
         default: return onError(out_message); break;
     }
 }
@@ -952,10 +1017,10 @@ auto Application::registration(const std::string& reg_string) -> const std::stri
     stream >> name >> login >> password;
 
     const std::string& (User::*get_name)() const = &User::getUserName;
-    if (name.empty() || checkingForStringExistence(name, get_name) != UNSUCCESSFUL) return RETURN_ERROR + " " + "NAME";
+    if (name.empty() || checkingForStringExistence(name, get_name) != UNSUCCESSFUL) return RETURN_ERROR + DELIMITER + "NAME";
 
     const std::string& (User::*get_login)() const = &User::getUserLogin;
-    if (login.empty() || checkingForStringExistence(login, get_login) != UNSUCCESSFUL) return RETURN_ERROR + " " + "LOGIN";
+    if (login.empty() || checkingForStringExistence(login, get_login) != UNSUCCESSFUL) return RETURN_ERROR + DELIMITER + "LOGIN";
 
     _user_array.push_back(std::make_shared<User>(name, login, _current_user_number));
 
@@ -991,9 +1056,48 @@ auto Application::signin(const std::string& signin_string, int thread_num) -> co
         }
         if (password_match)
         {
-            _signed_user.push_back(thread_num); // Set client authorization
-            return RETURN_OK;
+            _signed_user.push_back(thread_num);  // Set client authorization
+            return RETURN_OK + " " + std::to_string(index);
         }
     }
     return RETURN_ERROR;
+}
+
+auto Application::newmessages(const std::string& user_index) -> const std::string
+{
+    int index{std::stoi(user_index)};
+    auto user_number{_new_messages_array[index]->usersNumber()};
+
+    return std::string(std::to_string(user_number));
+}
+
+auto Application::getNumberMessagesInChat(const std::string& msg_in_chat) -> std::string
+{
+    std::stringstream stream(msg_in_chat);
+    std::string first_user, second_user;
+    stream >> first_user >> second_user;
+
+    auto first_user_id{std::stoi(first_user)};
+    auto second_user_id{std::stoi(second_user)};
+
+    if (first_user_id == -1 && second_user_id == -1)  // Common Chat
+    {
+        return std::to_string(_common_chat->getCurrentMessageNum());
+    }
+
+    auto chat{getPrivateChat(_user_array[first_user_id], _user_array[second_user_id])};
+    return std::to_string(chat->getCurrentMessageNum());
+}
+
+auto Application::commonChatGetMessage(const std::string& message_index) -> std::string
+{
+    std::string common_chat_messages{RETURN_ERROR};
+    if (!_common_chat->getCurrentMessageNum()) return common_chat_messages;
+
+    auto index{std::stoi(message_index)};
+
+    std::stringstream stream{};
+    _common_chat->printMessage(index, stream);
+    common_chat_messages = stream.str();
+    return common_chat_messages;
 }
