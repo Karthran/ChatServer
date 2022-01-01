@@ -282,7 +282,7 @@ auto Application::commonChat(const std::shared_ptr<User>& user) const -> int
 
 auto Application::commonChat_addMessage(const std::shared_ptr<User>& user) const -> void
 {
-    _common_chat->addMessage(user);
+//    _common_chat->addMessage(user);
 }
 
 auto Application::commonChat_editMessage(const std::shared_ptr<User>& user) const -> void
@@ -471,10 +471,10 @@ auto Application::privateChat_addMessage(const std::shared_ptr<User>& source_use
         ++_current_chat_number;
         chat->setInitialized(true);
     }
-    auto message{chat->addMessage(source_user)};
-    if (!message->isInitialized()) return;
-    auto index{target_user->getUserID()};
-    _new_messages_array[index]->addNewMessage(message);
+    //auto message{chat->addMessage(source_user)};
+    //if (!message->isInitialized()) return;
+    //auto index{target_user->getUserID()};
+    //_new_messages_array[index]->addNewMessage(message);
 }
 auto Application::privateChat_editMessage(
     const std::shared_ptr<User>& source_user, const std::shared_ptr<User>& target_user, const std::shared_ptr<Chat>& chat) const -> void
@@ -797,6 +797,7 @@ auto Application::reaction(const std::string& in_message, std::string& out_messa
             case OperationCode::NEW_MESSAGES: onNewMessages(in_message, out_message, thread_num); break;
             case OperationCode::GET_NUMBER_MESSAGES_IN_CHAT: onGetNumberMessagesInChat(in_message, out_message, thread_num); break;
             case OperationCode::COMMON_CHAT_GET_MESSAGE: onCommonChatGetMessage(in_message, out_message, thread_num); break;
+            case OperationCode::COMMON_CHAT_ADD_MESSAGE: onCommonChatAddMessage(in_message, out_message, thread_num); break;
             default: return onError(out_message); break;
         }
     }
@@ -983,6 +984,30 @@ auto Application::onCommonChatGetMessage(const std::string& in_message, std::str
     }
 }
 
+auto Application::onCommonChatAddMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void
+{
+    std::string code_operation_string, user_id_string, message_string, result;
+    std::stringstream stream(in_message);
+
+    stream >> code_operation_string >> code_operation_string >> user_id_string;
+    message_string = stream.str();
+    result = user_id_string + DELIMITER + message_string;
+
+    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
+    switch (code_operation)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            auto msg{commonChatAddMessage(result)};
+            _server->setCashMessage(msg, thread_num);
+            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
+            break;
+        }
+        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
+        default: return onError(out_message); break;
+    }
+}
+
 auto Application::onStop(const std::string& in_message, std::string& out_message, int thread_num) -> void
 {
     std::cout << "Client thread stop: " << thread_num << std::endl;
@@ -1100,4 +1125,18 @@ auto Application::commonChatGetMessage(const std::string& message_index) -> std:
     _common_chat->printMessage(index, stream);
     common_chat_messages = stream.str();
     return common_chat_messages;
+}
+
+auto Application::commonChatAddMessage(const std::string& message) -> std::string
+{
+    std::stringstream stream(message);
+    std::string user_id_string, message_string;
+    stream >> user_id_string >> message_string;
+
+    auto user_id{std::stoi(user_id_string)};
+    auto user_sptr{_user_array[user_id]};
+    auto msg_sptr{_common_chat->addMessage(user_sptr, message_string)};
+
+    if (msg_sptr->isInitialized()) return RETURN_OK;
+    return RETURN_ERROR;
 }

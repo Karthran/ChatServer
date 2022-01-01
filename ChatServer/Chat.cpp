@@ -61,19 +61,10 @@ auto Chat::printMessage(int message_index, std::stringstream& stream) const -> v
     stream << BOLDCYAN << std::setw(120) << std::setfill('-') << "-" << RESET << std::endl;
 }
 
-auto Chat::addMessage(const std::shared_ptr<User>& user) -> const std::shared_ptr<Message>
+auto Chat::addMessage(const std::shared_ptr<User>& user, const std::string& message) -> const std::shared_ptr<Message>
 {
     try
     {
-        std::string new_message{};
-
-        std::cout << std::endl << YELLOW << "Input message: " << BOLDGREEN;
-        std::getline(std::cin, new_message);
-        std::cout << RESET;
-        std::cout << BOLDYELLOW << "Send message?(Y/N):" << BOLDGREEN;
-        if (!Utils::isOKSelect()) return std::make_shared<Message>();
-        std::cout << RESET;
-
         time_t seconds{time(NULL)};
         tm timeinfo;
 #if defined(_WIN32)
@@ -82,7 +73,7 @@ auto Chat::addMessage(const std::shared_ptr<User>& user) -> const std::shared_pt
         localtime_r(&seconds, &timeinfo);
 #endif
 
-        _message_array.push_back(std::make_shared<Message>(new_message, user, timeinfo));
+        _message_array.push_back(std::make_shared<Message>(message, user, timeinfo));
         return _message_array[_message_array.size() - 1];
     }
     catch (std::exception& e)
