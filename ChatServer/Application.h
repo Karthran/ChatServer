@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <map>
 #include "DataBase.h"
 
 class Server;
@@ -29,6 +30,8 @@ private:
     std::string _self_path{};
 
     std::vector<int> _signed_user{};
+    std::map<int, std::string> _connected_user_id{};
+
 
     //std::vector<std::shared_ptr<User>> _user_array;
     //std::shared_ptr<Chat> _common_chat;
@@ -97,7 +100,7 @@ private:
     //auto onNewMessages(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     //auto onGetNumberMessagesInChat(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     //auto onCommonChatGetMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void;
-    //auto onCommonChatAddMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onCommonChatAddMessage(char* message, int thread_num) -> void;
 
     auto onStop(char* message, int thread_num) -> void;
     auto onError(char* message, int thread_num) const -> void;
@@ -113,11 +116,11 @@ private:
     auto checkEmail(char* email, size_t email_size, int thread_num) -> void;
     auto checkLogin(char* login, size_t login_size, int thread_num) -> void;
     auto registration(char* regdata, size_t regdata_size, int thread_num) -> void;
-    auto signin(char* signin_data, size_t signin_gdata_size, int thread_num) -> void;
+    auto signin(char* signin_data, size_t signin_data_size, int thread_num) -> void;
     //auto newmessages(const std::string& user_index) -> const std::string;
     //auto getNumberMessagesInChat(const std::string& msg_in_chat) -> std::string;
     //auto commonChatGetMessage(const std::string& message_index) -> std::string;
-    //auto commonChatAddMessage(const std::string& message) -> std::string;
+    auto commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
 };

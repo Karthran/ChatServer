@@ -36,8 +36,8 @@ private:
     std::vector<std::shared_ptr<char[]>> _exchange_message;  /////////////////////////////////////////////////////////
     std::vector<size_t> _exchange_message_size;              /////////////////////////////////////////////////////
     std::vector<size_t> _msg_from_client_size;               /////////////////////////////////////////////////////////////
-    std::vector<bool> _in_message_ready{};
-    std::vector<bool> _out_message_ready{};
+    //std::vector<bool> _in_message_ready{};
+    //std::vector<bool> _out_message_ready{};
 
     int thread_count{0};
     volatile bool continue_flag{true};

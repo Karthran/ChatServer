@@ -798,7 +798,7 @@ auto Application::reaction(char* message, int thread_num) -> void
             // case OperationCode::NEW_MESSAGES: onNewMessages(in_message, out_message, thread_num); break;
             // case OperationCode::GET_NUMBER_MESSAGES_IN_CHAT: onGetNumberMessagesInChat(in_message, out_message, thread_num); break;
             // case OperationCode::COMMON_CHAT_GET_MESSAGE: onCommonChatGetMessage(in_message, out_message, thread_num); break;
-            // case OperationCode::COMMON_CHAT_ADD_MESSAGE: onCommonChatAddMessage(in_message, out_message, thread_num); break;
+            case OperationCode::COMMON_CHAT_ADD_MESSAGE: onCommonChatAddMessage(message, thread_num); break;
             default: return onError(message, thread_num); break;
         }
     }
@@ -994,32 +994,42 @@ auto Application::onSignIn(char* message, int thread_num) -> void
 //        default: return onError(out_message); break;
 //    }
 //}
-//
-// auto Application::onCommonChatAddMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void
-//{
-//    std::string code_operation_string, user_id_string, message_string, result;
-//    std::stringstream stream(in_message);
-//
-//    stream >> code_operation_string >> code_operation_string >> user_id_string;
-//    message_string = stream.str();
-//    result = user_id_string + DELIMITER + message_string;
-//
-//    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
-//    switch (code_operation)
-//    {
-//        case OperationCode::CHECK_SIZE:
-//        {
-//            auto msg{commonChatAddMessage(result)};
-//            _server->setCashMessage(msg, thread_num);
-//            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + " " + std::to_string(msg.size() + HEADER_SIZE);
-//            break;
-//        }
-//        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
-//        default: return onError(out_message); break;
-//    }
-//}
 
-auto Application::onStop(char* message, int thread_num) -> void {}
+auto Application::onCommonChatAddMessage(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            commonChatAddMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onStop(char* message, int thread_num) -> void
+{
+    std::string user_id{(message + sizeof(int))};
+    // std::cout << "User ID: " << user_id << "!" << std::endl;
+
+    std::string query_str = "UPDATE Users SET exitdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
+    _data_base->query(query_str.c_str());
+}
 
 auto Application::onError(char* message, int thread_num) const -> void
 {
@@ -1086,7 +1096,7 @@ auto Application::checkLogin(char* login, size_t login_size, int thread_num) -> 
 auto Application::registration(char* regdata, size_t regdata_size, int thread_num) -> void
 {
     auto data_ptr{regdata};
-    std::string query_str = "INSERT INTO Users(name, surname, login, email, regdate) VALUES (";
+    std::string query_str = "INSERT INTO Users(name, surname, login, email, regdate, exitdate) VALUES (";
     std::string login{};
     for (auto i{0}; i < 4; ++i)
     {
@@ -1097,7 +1107,7 @@ auto Application::registration(char* regdata, size_t regdata_size, int thread_nu
         query_str += "', ";
         data_ptr += length + 1;  // pointer in the next word
     }
-    query_str += "now())";
+    query_str += "now(),'2020-12-31 10:10:10')";
     std::string password = data_ptr;
     // std::cout << password << std::endl;
 
@@ -1154,8 +1164,6 @@ auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread
     std::string login{signin_data};
     std::string password{data_ptr + login.size() + 1};
 
-    std::cout << login << " " << password << std::endl;
-
     std::string query_str = "SELECT id FROM Users WHERE login ='" + login + "'";
 
     _data_base->query(query_str.c_str());
@@ -1168,17 +1176,72 @@ auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread
     const char* result{nullptr};
     if (row_num)
     {
-        std::string id{query_result.c_str()};
-        std::cout << "ID: " << id << " " << id.size() << std::endl;
         result = query_result.c_str();
+
+        std::string id{query_result.c_str()};
+        query_str = "SELECT hash,salt FROM Hash WHERE id ='" + id + "'";
+        _data_base->query(query_str.c_str());
+
+        std::string query_hash_salt{};
+        _data_base->getQueryResult(query_hash_salt, row_num, column_num);
+        auto data_ptr{query_hash_salt.c_str()};
+        std::string hash{data_ptr};
+        std::string salt{data_ptr + hash.size() + 1};
+
+        query_str = "SELECT md5('" + password + salt + "')";
+        _data_base->query(query_str.c_str());
+        std::string query_check_hash{};
+        _data_base->getQueryResult(query_check_hash, row_num, column_num);
+        std::string check_hash{query_check_hash.c_str()};
+
+        if (check_hash != hash) result = RETURN_ERROR.c_str();
+
+        _connected_user_id[thread_num] = std::move(id);
+
+        // std::cout << "Hash: " << hash << "  Check Hash: " << check_hash << std::endl;
+        // auto err_ptr{_data_base->getMySQLError()};
+        // std::cout << err_ptr << std::endl;
     }
     else
     {
         result = RETURN_ERROR.c_str();
     }
 
-    auto err_ptr{_data_base->getMySQLError()};
-    std::cout << err_ptr << std::endl;
+    // auto err_ptr{_data_base->getMySQLError()};
+    // std::cout << err_ptr << std::endl;
+
+    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
+
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
+}
+
+auto Application::commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string chat_message{message};
+
+        std::cout << chat_message << std::endl;
+
+
+    std::string query_str = "INSERT INTO CommonMessages (user_id, message, creation_date)"
+                            "VALUES('" +
+                            _connected_user_id[thread_num] + "', '" + message + "', now())";
+
+    std::cout << query_str << std::endl;
+
+    _data_base->query(query_str.c_str());
+
+    const char* result{nullptr};
+
+    if (auto err_ptr{_data_base->getMySQLError()})
+    {
+        result = RETURN_ERROR.c_str();
+        std::cout << err_ptr << std::endl;
+    }
+    else
+    {
+        result = RETURN_OK.c_str();
+    }
 
     _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
 
@@ -1195,6 +1258,7 @@ auto Application::createDataBases() -> void
                       "login VARCHAR(255) NOT NULL UNIQUE,"
                       "email VARCHAR(255) NOT NULL UNIQUE,"
                       "regdate DATETIME NOT NULL,"
+                      "exitdate DATETIME NOT NULL,"
                       "deleted INT DEFAULT 0)");
 
     //_data_base->query("DROP TABLE Hash");
@@ -1214,6 +1278,13 @@ auto Application::createDataBases() -> void
                       "edited BIT(1) DEFAULT 0,"
                       "editing_date DATETIME ,"
                       "status VARCHAR(100) NOT NULL CHECK( status IN ('done', 'in progress', 'delivery')))");
+
+    _data_base->query("CREATE TABLE CommonMessages (id INT AUTO_INCREMENT PRIMARY KEY,"
+                      "user_id INT REFERENCES Users(id),"
+                      "message VARCHAR(255) NOT NULL,"
+                      "creation_date DATETIME NOT NULL,"
+                      "edited BIT(1) DEFAULT 0,"
+                      "editing_date DATETIME )");
 
     // _data_base->query("INSERT INTO Users (name,surname,login,email,regdate)"
     //" VALUES"

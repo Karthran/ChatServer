@@ -153,13 +153,13 @@ auto Server::server_thread(int thread_number) -> void
         {
             //_in_message_ready[thread_number] = true;
 
+            _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
+
             if (*(reinterpret_cast<int*>(_exchange_message[thread_number].get())) == static_cast<int>(OperationCode::STOP))
             {
                 std::cout << "Client Exited." << std::endl;
                 break;
             }
-
-            _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
 
             //while (!_out_message_ready[thread_number])
             //{
@@ -245,13 +245,13 @@ auto Server::client_loop(int thread_number, int connection) -> void
 
         // _in_message_ready[thread_number] = true;
 
+        _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
+
         if (*(reinterpret_cast<int*>(_exchange_message[thread_number].get())) == static_cast<int>(OperationCode::STOP))
         {
             std::cout << "Client Exited." << std::endl;
             break;
         }
-
-        _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
 
         //while (!_out_message_ready[thread_number])
         //{

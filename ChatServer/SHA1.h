@@ -12,7 +12,7 @@ const uint block_expend_size_uints = 80;  // количество 4байтовых в дополненном 
 
 const uint SHA1HASHLENGTHBYTES = 20;
 const uint SHA1HASHLENGTHUINTS = 5;
-const uint SALTLENGTH = SHA1HASHLENGTHBYTES;
+const uint SALTLENGTH = 32;
 
 typedef uint* Block;
 typedef uint ExpendBlock[block_expend_size_uints];
