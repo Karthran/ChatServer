@@ -19,6 +19,7 @@ public:
     auto connect() -> void;
     auto query(const char* sql_query) -> int;
     auto getQueryResult(std::string& result, int& row_num, int& column_num) -> void;
+    auto getMySQLError() -> const char*;
 
 private:
     MYSQL* _mysql{nullptr};

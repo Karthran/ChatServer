@@ -48,5 +48,5 @@ private:
     auto client_loop(int thread_number, int connection) -> void;
     auto server_thread() -> int;
 #endif
-    auto main_loop(Application* app) -> void;
+//    auto main_loop(Application* app) -> void;
 };

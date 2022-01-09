@@ -93,7 +93,7 @@ private:
     auto onCheckEmail(char* message, int thread_num) -> void;
     auto onCheckLogin(char* message, int thread_num) -> void;
     auto onRegistration(char* message, int thread_num) -> void;
-    //auto onSignIn(const std::string& in_message, std::string& out_message, int thread_num) -> void;
+    auto onSignIn(char* message, int thread_num) -> void;
     //auto onNewMessages(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     //auto onGetNumberMessagesInChat(const std::string& in_message, std::string& out_message, int thread_num) -> void;
     //auto onCommonChatGetMessage(const std::string& in_message, std::string& out_message, int thread_num) -> void;
@@ -113,7 +113,7 @@ private:
     auto checkEmail(char* email, size_t email_size, int thread_num) -> void;
     auto checkLogin(char* login, size_t login_size, int thread_num) -> void;
     auto registration(char* regdata, size_t regdata_size, int thread_num) -> void;
-    //auto signin(const std::string& signin_string, int thread_num) -> const std::string;
+    auto signin(char* signin_data, size_t signin_gdata_size, int thread_num) -> void;
     //auto newmessages(const std::string& user_index) -> const std::string;
     //auto getNumberMessagesInChat(const std::string& msg_in_chat) -> std::string;
     //auto commonChatGetMessage(const std::string& message_index) -> std::string;

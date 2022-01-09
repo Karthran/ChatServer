@@ -59,14 +59,19 @@ auto DataBase::getQueryResult(std::string& result, int& row_num, int& column_num
                     result += row[i];
                 else
                     result += "NULL";
-                result.push_back('0');
-                result[result.size()] = '\0';
 
-                std::cout << row[i] << "  ";
+                result.push_back('0');
+                result[result.size() - 1] = '\0';
+                //std::cout << row[i] << "  ";
             }
-            std::cout << std::endl;
+            //std::cout << result << " " << result.size() << std::endl;
         }
     }
     else
         std::cout << "Ошибка MySql номер " << mysql_error(_mysql);
+}
+
+auto DataBase::getMySQLError() -> const char*
+{
+    return mysql_error(_mysql);
 }

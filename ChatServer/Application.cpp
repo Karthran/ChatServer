@@ -10,11 +10,13 @@
 #include <exception>
 #include <fstream>
 #include <sstream>
+#include <mutex>
 
 #include "Application.h"
 #include "Server.h"
 #include "core.h"
 #include "Utils.h"
+#include "SHA1.h"
 
 //#include "Chat.h"
 //#include "Message.h"
@@ -23,6 +25,8 @@
 //#include "PasswordHash.h"
 //#include "FileUtils.h"
 //#include "NewMessages.h"
+
+std::mutex mutex{};
 
 Application::Application()
 {
@@ -779,7 +783,7 @@ auto Application::reaction(char* message, int thread_num) -> void
 {
     auto code{-1};
     getFromBuffer(message, 0, code);
-    std::cout << "CODE: " << code << std::endl;
+    //   std::cout << "CODE: " << code << std::endl;
     try
     {
         auto code_operation = static_cast<OperationCode>(code);
@@ -790,7 +794,7 @@ auto Application::reaction(char* message, int thread_num) -> void
             case OperationCode::CHECK_EMAIL: onCheckEmail(message, thread_num); break;
             case OperationCode::CHECK_LOGIN: onCheckLogin(message, thread_num); break;
             case OperationCode::REGISTRATION: onRegistration(message, thread_num); break;
-            // case OperationCode::SIGN_IN: onSignIn(in_message, out_message, thread_num); break;
+            case OperationCode::SIGN_IN: onSignIn(message, thread_num); break;
             // case OperationCode::NEW_MESSAGES: onNewMessages(in_message, out_message, thread_num); break;
             // case OperationCode::GET_NUMBER_MESSAGES_IN_CHAT: onGetNumberMessagesInChat(in_message, out_message, thread_num); break;
             // case OperationCode::COMMON_CHAT_GET_MESSAGE: onCommonChatGetMessage(in_message, out_message, thread_num); break;
@@ -811,7 +815,6 @@ auto Application::onCheckSize(char* message, int thread_num) const -> void
 {
     auto message_length{-1};
     getFromBuffer(message, sizeof(int), message_length);
-    std::cout << "Message length: " << message_length << std::endl;
 
     _server->setBufferSize(thread_num, message_length + HEADER_SIZE);
     _server->getMessageSizeRef(thread_num) = 2 * sizeof(message_length);  // first int CHECK_SIZE
@@ -822,7 +825,6 @@ auto Application::onCheckEmail(char* message, int thread_num) -> void
 {
     auto code_operation{-1};
     getFromBuffer(message, sizeof(int), code_operation);
-    std::cout << "CODE: " << code_operation << std::endl;
 
     auto code = static_cast<OperationCode>(code_operation);
     switch (code)
@@ -848,7 +850,6 @@ auto Application::onCheckLogin(char* message, int thread_num) -> void
 {
     auto code_operation{-1};
     getFromBuffer(message, sizeof(int), code_operation);
-    std::cout << "CODE: " << code_operation << std::endl;
 
     auto code = static_cast<OperationCode>(code_operation);
     switch (code)
@@ -874,7 +875,6 @@ auto Application::onRegistration(char* message, int thread_num) -> void
 {
     auto code_operation{-1};
     getFromBuffer(message, sizeof(int), code_operation);
-    std::cout << "CODE: " << code_operation << std::endl;
 
     auto code = static_cast<OperationCode>(code_operation);
     switch (code)
@@ -889,37 +889,42 @@ auto Application::onRegistration(char* message, int thread_num) -> void
             break;
         }
         case OperationCode::READY:
+        {
             _server->getMessageSizeRef(thread_num) = 0;
             addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
             break;
+        }
         default: return onError(message, thread_num); break;
     }
 }
 
-// auto Application::onSignIn(const std::string& in_message, std::string& out_message, int thread_num) -> void
-//{
-//    std::string code_operation_string;
-//    std::string signin_string, login, password;
-//    std::stringstream stream(in_message);
-//
-//    stream >> code_operation_string >> code_operation_string >> login >> password;
-//    signin_string = login + DELIMITER + password;
-//
-//    auto code_operation = static_cast<OperationCode>(std::stoi(code_operation_string));
-//    switch (code_operation)
-//    {
-//        case OperationCode::CHECK_SIZE:
-//        {
-//            auto msg{signin(signin_string, thread_num)};
-//            _server->setCashMessage(msg, thread_num);
-//            out_message = std::to_string(static_cast<int>(OperationCode::CHECK_SIZE)) + DELIMITER + std::to_string(msg.size() + HEADER_SIZE);
-//            break;
-//        }
-//        case OperationCode::READY: out_message = _server->getCashMessage(thread_num); break;
-//        default: return onError(out_message); break;
-//    }
-//}
-//
+auto Application::onSignIn(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            signin(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
 // auto Application::onNewMessages(const std::string& in_message, std::string& out_message, int thread_num) -> void
 //{
 //    std::string code_operation_string;
@@ -1028,7 +1033,7 @@ auto Application::checkEmail(char* email, size_t email_size, int thread_num) -> 
     email[email_size] = '\0';
     std::string query_str = "SELECT id FROM Users WHERE email = lower('" + std::string(email) + "')";
 
-    std::cout << email << std::endl;
+    //   std::cout << email << std::endl;
 
     std::string query_result{};
     int row_num{0};
@@ -1056,7 +1061,7 @@ auto Application::checkLogin(char* login, size_t login_size, int thread_num) -> 
     login[login_size] = '\0';
     std::string query_str = "SELECT id FROM Users WHERE login = lower('" + std::string(login) + "')";
 
-    std::cout << login << std::endl;
+    //   std::cout << login << std::endl;
 
     std::string query_result{};
     int row_num{0};
@@ -1078,7 +1083,108 @@ auto Application::checkLogin(char* login, size_t login_size, int thread_num) -> 
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
 }
 
-auto Application::registration(char* regdata, size_t regdata_size, int thread_num) -> void {}
+auto Application::registration(char* regdata, size_t regdata_size, int thread_num) -> void
+{
+    auto data_ptr{regdata};
+    std::string query_str = "INSERT INTO Users(name, surname, login, email, regdate) VALUES (";
+    std::string login{};
+    for (auto i{0}; i < 4; ++i)
+    {
+        if (i == 2) login = data_ptr;  // save login for future query
+        auto length{strlen(data_ptr)};
+        query_str += "'";
+        query_str += data_ptr;
+        query_str += "', ";
+        data_ptr += length + 1;  // pointer in the next word
+    }
+    query_str += "now())";
+    std::string password = data_ptr;
+    // std::cout << password << std::endl;
+
+    const char* result{nullptr};
+
+    if (!_data_base->query(query_str.c_str()))
+    {
+        query_str = "SELECT id FROM Users WHERE login = '" + login + "'";
+        _data_base->query(query_str.c_str());
+        std::string query_result{};
+        int row_num{0};
+        int column_num{0};
+        _data_base->getQueryResult(query_result, row_num, column_num);
+
+        std::string id{query_result.c_str()};
+        std::string salt{getSalt()};
+        password += salt;
+        query_str = "INSERT INTO Hash (id, hash, salt) VALUES(" + id + ", md5('" + password + "'),'" + salt + "');";
+        _data_base->query(query_str.c_str());
+
+        // auto err_ptr{_data_base->getMySQLError()};
+        // std::cout << err_ptr << std::endl;
+
+        result = RETURN_OK.c_str();
+    }
+    else
+    {
+
+        auto err_ptr{_data_base->getMySQLError()};
+        std::cout << err_ptr << std::endl;
+        if (strstr(err_ptr, "login"))
+        {
+            result = "LOGIN";
+        }
+        else if (strstr(err_ptr, "email"))
+        {
+            result = "EMAIL";
+        }
+        else
+        {
+            result = RETURN_ERROR.c_str();
+        }
+    }
+
+    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
+
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
+}
+
+auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread_num) -> void
+{
+    auto data_ptr{signin_data};
+    std::string login{signin_data};
+    std::string password{data_ptr + login.size() + 1};
+
+    std::cout << login << " " << password << std::endl;
+
+    std::string query_str = "SELECT id FROM Users WHERE login ='" + login + "'";
+
+    _data_base->query(query_str.c_str());
+
+    std::string query_result{};
+    int row_num{0};
+    int column_num{0};
+    _data_base->getQueryResult(query_result, row_num, column_num);
+
+    const char* result{nullptr};
+    if (row_num)
+    {
+        std::string id{query_result.c_str()};
+        std::cout << "ID: " << id << " " << id.size() << std::endl;
+        result = query_result.c_str();
+    }
+    else
+    {
+        result = RETURN_ERROR.c_str();
+    }
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
+
+    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
+
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
+}
 
 auto Application::createDataBases() -> void
 {
@@ -1115,7 +1221,7 @@ auto Application::createDataBases() -> void
     //"('Svetlana', 'Sokolova', lower('Sun7856'), lower('Sokolova@gmai.com'), now())");
     //"('Иван', 'Суржиков', lower('Inav777'), lower('Иван_Суржиков@почта.ру'), now())");
     //"('Проверка_Поля_на_достаточно_длинную_и_нестандартную_фамилию', 'такое_же_длинное_имя_с_нестандартными_символами_#!@$#?\_', lower('Login'),
-    //lower('Почта@русская.Ру'), now())");
+    // lower('Почта@русская.Ру'), now())");
 }
 
 // auto Application::checkLogin(const std::string& user_login) -> const std::string

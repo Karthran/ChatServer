@@ -43,8 +43,8 @@ auto Server::server_thread(int thread_number) -> void
     _exchange_message.push_back(nullptr);  ///////////////////////////////////////////////////////
     _exchange_message_size.push_back(0);         ////////////////////////////////////////////////////////
     _msg_from_client_size.push_back(0);    /////////////////////////////////////////////////////////////
-    _in_message_ready.push_back(false);
-    _out_message_ready.push_back(false);
+    //_in_message_ready.push_back(false);
+    //_out_message_ready.push_back(false);
     // std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     WSADATA wsaData;
@@ -151,7 +151,7 @@ auto Server::server_thread(int thread_number) -> void
         iResult = recv(ClientSocket, _exchange_message[thread_number].get(), current_buffer_size, 0);
         if (iResult > 0)
         {
-            _in_message_ready[thread_number] = true;
+            //_in_message_ready[thread_number] = true;
 
             if (*(reinterpret_cast<int*>(_exchange_message[thread_number].get())) == static_cast<int>(OperationCode::STOP))
             {
@@ -159,11 +159,15 @@ auto Server::server_thread(int thread_number) -> void
                 break;
             }
 
-            while (!_out_message_ready[thread_number])
-            {
-            }
+            _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
 
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));  // NEED
+            //while (!_out_message_ready[thread_number])
+            //{
+            //}
+
+            //std::this_thread::sleep_for(std::chrono::milliseconds(1));  // NEED
+
+            //std::cout << "Send start!" << std::endl;
 
             // Echo the buffer back to the sender
             iSendResult = send(ClientSocket, _exchange_message[thread_number].get(), _exchange_message_size[thread_number], 0);
@@ -175,7 +179,7 @@ auto Server::server_thread(int thread_number) -> void
                 return;
             }
 
-            _out_message_ready[thread_number] = false;
+            //_out_message_ready[thread_number] = false;
         }
         else if (iResult == 0)
             printf("Connection closing...\n");
@@ -220,8 +224,8 @@ auto Server::client_loop(int thread_number, int connection) -> void
     _exchange_message.push_back(nullptr);  
     _exchange_message_size.push_back(0);         
     _msg_from_client_size.push_back(0);   
-    _in_message_ready.push_back(false);
-    _out_message_ready.push_back(false);
+    //_in_message_ready.push_back(false);
+    //_out_message_ready.push_back(false);
 
     size_t current_buffer_size{0};
 
@@ -239,7 +243,7 @@ auto Server::client_loop(int thread_number, int connection) -> void
 
         ssize_t length = read(connection, _exchange_message[thread_number].get(), current_buffer_size);
 
-         _in_message_ready[thread_number] = true;
+        // _in_message_ready[thread_number] = true;
 
         if (*(reinterpret_cast<int*>(_exchange_message[thread_number].get())) == static_cast<int>(OperationCode::STOP))
         {
@@ -247,17 +251,19 @@ auto Server::client_loop(int thread_number, int connection) -> void
             break;
         }
 
-        while (!_out_message_ready[thread_number])
-        {
-        }
+        _app->reaction(_exchange_message[thread_number].get(), thread_number);  //
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));  // NEED
+        //while (!_out_message_ready[thread_number])
+        //{
+        //}
+
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));  // NEED
         
         ssize_t bytes = write(connection, _exchange_message[thread_number].get(), _exchange_message_size[thread_number]);
-        if (bytes >= 0)
-        {
-            _out_message_ready[thread_number] = false;
-        }
+        //if (bytes >= 0)
+        //{
+        //    _out_message_ready[thread_number] = false;
+        //}
     }
     // close socket
     close(connection);
@@ -319,30 +325,32 @@ auto Server::server_thread() -> int
 
 #endif  // _WIN32
 
-auto Server::main_loop(Application* app) -> void
-{
-    while (continue_flag)
-    {
-        for (auto i = 0; i < _out_message_ready.size(); ++i)
-        {
-
-            if (!_in_message_ready[i]) continue;
-
-            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            // std::cout << "In message: " << in_message[i] << " " << i << std::endl;
-
-            app->reaction(_exchange_message[i].get(), i);  //
-
-            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            _in_message_ready[i] = false;
-            _out_message_ready[i] = true;
-        }
-        // std::cin >> msg;
-        // if (msg == "end") break;
-    }
-}
+//auto Server::main_loop(Application* app) -> void
+//{
+//    while (continue_flag)
+//    {
+//        for (auto i = 0; i < _out_message_ready.size(); ++i)
+//        {
+//
+//            if (!_in_message_ready[i]) continue;
+//
+//            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//
+//            // std::cout << "In message: " << in_message[i] << " " << i << std::endl;
+//
+//            app->reaction(_exchange_message[i].get(), i);  //
+//
+//            std::cout << "Reaction end!" << std::endl;
+//
+//            // std::this_thread::sleep_for(std::chrono::milliseconds(10));
+//
+//            _in_message_ready[i] = false;
+//            _out_message_ready[i] = true;
+//        }
+//        // std::cin >> msg;
+//        // if (msg == "end") break;
+//    }
+//}
 
 Server::Server(Application* app) : _app(app)
 {
@@ -363,8 +371,8 @@ auto Server::run() -> void
     t.detach();
 #endif  // _WIN32
 
-    std::thread t1(&Server::main_loop, this, _app);
-    t1.detach();
+    //std::thread t1(&Server::main_loop, this, _app);
+    //t1.detach();
 
     return;
 }
@@ -387,7 +395,7 @@ auto Server::resizeCashMessageBuffer(int thread_num, size_t new_size) -> void
         // delete[] _cash_message[thread_num];
         _cash_message[thread_num] = std::shared_ptr<char[]>(new char[new_size]);
         _cash_message_buffer_size[thread_num] = new_size;
-        std::cout << "Resize cash mesage to: " << new_size << std::endl;
+//        std::cout << "Resize cash mesage to: " << new_size << std::endl;
     }
 }
 
