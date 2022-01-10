@@ -54,6 +54,12 @@ const int MAX_MESSAGES_IN_CHAT = 10000;
 const int MESSAGES_ON_PAGE = 5;
 const int LINE_TO_PAGE = 15;
 const int IGNORED_NUM = 0xffff;
+const unsigned int SALTLENGTH = 32;
+
+const char alphanum[] = "0123456789"
+                        "!@#$%^&*"
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                        "abcdefghijklmnopqrstuvwxyz";
 
 class Utils
 {
@@ -66,6 +72,7 @@ public:
     static auto getPassword(std::string& string, const std::string& text) -> void;
     static auto getSelfPath(std::string& path) -> void;
     static auto printOSVersion() -> void;
+    static auto getSalt() -> const std::string;
 
     template <typename T>
     static auto minToMaxOrder(T& min, T& max) -> bool;

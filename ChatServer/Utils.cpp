@@ -153,6 +153,18 @@ auto Utils::printOSVersion() -> void
 
 #endif
 }
+auto Utils::getSalt() -> const std::string
+{
+    std::string salt{};
+    srand(static_cast<unsigned int>(time(0)));
+    auto SaltArrayLength{sizeof(alphanum) - 1};  // -1 for last '\0'
+    for (auto i{0}; i < SALTLENGTH; ++i)
+    {
+        salt.push_back(alphanum[rand() % SaltArrayLength]);
+    }
+    return salt;
+}
+
 #if defined(_WIN32)
 auto Utils::getWindowsVersionName() -> const char*
 {
