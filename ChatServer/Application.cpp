@@ -1032,7 +1032,7 @@ auto Application::onStop(char* message, int thread_num) -> void
     //std::string user_id{(message + sizeof(int))};
     // std::cout << "User ID: " << user_id << "!" << std::endl;
 
-    //std::string query_str = "UPDATE Users SET exitdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
+    //std::string query_str = "UPDATE Users SET viewdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
     //_data_base->query(query_str.c_str());
 }
 
@@ -1112,7 +1112,7 @@ auto Application::checkLogin(char* login, size_t login_size, int thread_num) -> 
 auto Application::registration(char* regdata, size_t regdata_size, int thread_num) -> void
 {
     auto data_ptr{regdata};
-    std::string query_str = "INSERT INTO Users(name, surname, login, email, regdate, exitdate) VALUES (";
+    std::string query_str = "INSERT INTO Users(name, surname, login, email, regdate, viewdate) VALUES (";
     std::string login{};
     std::string email{};
     for (auto i{0}; i < 4; ++i)
@@ -1270,7 +1270,7 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), column_num);
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), query_result.c_str(), query_result.size());
 
-     std::string query = "UPDATE Users SET exitdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
+     std::string query = "UPDATE Users SET viewdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
     _data_base->query(query.c_str());
 }
 
@@ -1283,7 +1283,7 @@ auto Application::createDataBases() -> void
                       "login VARCHAR(255) NOT NULL UNIQUE,"
                       "email VARCHAR(255) NOT NULL UNIQUE,"
                       "regdate DATETIME NOT NULL,"
-                      "exitdate DATETIME NOT NULL,"
+                      "viewdate DATETIME NOT NULL,"
                       "deleted INT DEFAULT 0)");
 
     //_data_base->query("DROP TABLE Hash");
