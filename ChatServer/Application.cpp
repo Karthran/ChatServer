@@ -1029,11 +1029,11 @@ auto Application::onCommonChatAddMessage(char* message, int thread_num) -> void
 
 auto Application::onStop(char* message, int thread_num) -> void
 {
-    std::string user_id{(message + sizeof(int))};
+    //std::string user_id{(message + sizeof(int))};
     // std::cout << "User ID: " << user_id << "!" << std::endl;
 
-    std::string query_str = "UPDATE Users SET exitdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
-    _data_base->query(query_str.c_str());
+    //std::string query_str = "UPDATE Users SET exitdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
+    //_data_base->query(query_str.c_str());
 }
 
 auto Application::onError(char* message, int thread_num) const -> void
@@ -1255,7 +1255,7 @@ auto Application::commonChatAddMessage(char* message, size_t message_size, int t
 
 auto Application::commonChatGetMessages(char* data, size_t data_size, int thread_num) -> void
 {
-    std::string query_str = "SELECT name, surname, user_id, message, creation_date, edited, editing_date "
+    std::string query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
                             "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id";
     _data_base->query(query_str.c_str());
 
@@ -1269,6 +1269,9 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), row_num);
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), column_num);
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), query_result.c_str(), query_result.size());
+
+     std::string query = "UPDATE Users SET exitdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
+    _data_base->query(query.c_str());
 }
 
 auto Application::createDataBases() -> void
