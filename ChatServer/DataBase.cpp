@@ -45,6 +45,7 @@ auto DataBase::getQueryResult(std::string& result, int& row_num, int& column_num
     MYSQL_ROW row{};
 
     row_num = 0;
+    column_num = 0;
     if (res = mysql_store_result(_mysql))
     {
         column_num = mysql_num_fields(res);

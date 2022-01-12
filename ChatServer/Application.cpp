@@ -1029,10 +1029,10 @@ auto Application::onCommonChatAddMessage(char* message, int thread_num) -> void
 
 auto Application::onStop(char* message, int thread_num) -> void
 {
-    //std::string user_id{(message + sizeof(int))};
+    // std::string user_id{(message + sizeof(int))};
     // std::cout << "User ID: " << user_id << "!" << std::endl;
 
-    //std::string query_str = "UPDATE Users SET viewdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
+    // std::string query_str = "UPDATE Users SET viewdate = now() WHERE id = '" + std::string(message + sizeof(int)) + "'";
     //_data_base->query(query_str.c_str());
 }
 
@@ -1255,23 +1255,51 @@ auto Application::commonChatAddMessage(char* message, size_t message_size, int t
 
 auto Application::commonChatGetMessages(char* data, size_t data_size, int thread_num) -> void
 {
-    std::string query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
-                            "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id";
+    std::string query_str = "SELECT viewdate FROM Users WHERE id ='" + _connected_user_id[thread_num] + "'";
     _data_base->query(query_str.c_str());
 
-    std::string query_result{};
+    std::string query_viewdate{};
     int row_num{0};
     int column_num{0};
-    _data_base->getQueryResult(query_result, row_num, column_num);
+    _data_base->getQueryResult(query_viewdate, row_num, column_num);
+    std::string lastview{query_viewdate.c_str()};
+    query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
+                "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date <= '" +
+                lastview + "'";
+    _data_base->query(query_str.c_str());
 
-    _server->resizeCashMessageBuffer(thread_num, query_result.size() + HEADER_SIZE);
+    std::string old_msg{};
+    int old_row_num{0};
+    int old_column_num{0};
+    _data_base->getQueryResult(old_msg, old_row_num, old_column_num);
+    query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
+                "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date > '" +
+                lastview + "'";
+    _data_base->query(query_str.c_str());
+
+    std::string new_msg{};
+    auto new_row_num{0};
+    auto new_column_num{0};
+    _data_base->getQueryResult(new_msg, new_row_num, new_column_num);
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
+
+    std::cout << "Old Messages number: " << old_row_num << std::endl;
+    std::cout << "New Messages number: " << new_row_num << std::endl;
+
+    _server->resizeCashMessageBuffer(thread_num, old_msg.size() + new_msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
-    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), row_num);
-    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), column_num);
-    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), query_result.c_str(), query_result.size());
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::COMMON_CHAT_GET_MESSAGES));
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), old_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), old_column_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_column_num);
+    if (old_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), old_msg.c_str(), old_msg.size());
+    if (new_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_msg.c_str(), new_msg.size());
 
-     std::string query = "UPDATE Users SET viewdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
-    _data_base->query(query.c_str());
+    query_str = "UPDATE Users SET viewdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
+    _data_base->query(query_str.c_str());
 }
 
 auto Application::createDataBases() -> void
