@@ -795,10 +795,12 @@ auto Application::reaction(char* message, int thread_num) -> void
             case OperationCode::CHECK_LOGIN: onCheckLogin(message, thread_num); break;
             case OperationCode::REGISTRATION: onRegistration(message, thread_num); break;
             case OperationCode::SIGN_IN: onSignIn(message, thread_num); break;
-            // case OperationCode::NEW_MESSAGES: onNewMessages(in_message, out_message, thread_num); break;
-            // case OperationCode::GET_NUMBER_MESSAGES_IN_CHAT: onGetNumberMessagesInChat(in_message, out_message, thread_num); break;
             case OperationCode::COMMON_CHAT_GET_MESSAGES: onCommonChatGetMessages(message, thread_num); break;
             case OperationCode::COMMON_CHAT_ADD_MESSAGE: onCommonChatAddMessage(message, thread_num); break;
+            case OperationCode::COMMON_CHAT_CHECK_MESSAGE: onCommonChatCheckMessage(message, thread_num); break;
+            case OperationCode::COMMON_CHAT_EDIT_MESSAGE: onCommonChatEditMessage(message, thread_num); break;
+            case OperationCode::COMMON_CHAT_DELETE_MESSAGE: onCommonChatDeleteMessage(message, thread_num); break;
+            case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: onNewMessagesInCommonChat(message, thread_num); break;
             default: return onError(message, thread_num); break;
         }
     }
@@ -1027,6 +1029,114 @@ auto Application::onCommonChatAddMessage(char* message, int thread_num) -> void
     }
 }
 
+auto Application::onCommonChatCheckMessage(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            commonChatCheckMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onCommonChatEditMessage(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            commonChatEditMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onCommonChatDeleteMessage(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            commonChatDeleteMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onNewMessagesInCommonChat(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            newMessagesInCommonChat(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
 auto Application::onStop(char* message, int thread_num) -> void
 {
     // std::string user_id{(message + sizeof(int))};
@@ -1228,31 +1338,6 @@ auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
 }
 
-auto Application::commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void
-{
-    std::string chat_message{message};
-
-    std::string query_str = "INSERT INTO CommonMessages (user_id, message, creation_date)"
-                            "VALUES('" +
-                            _connected_user_id[thread_num] + "', '" + message + "', now())";
-
-    _data_base->query(query_str.c_str());
-    const char* result{nullptr};
-    if (auto err_ptr{_data_base->getMySQLError()})
-    {
-        result = RETURN_ERROR.c_str();
-        std::cout << err_ptr << std::endl;
-    }
-    else
-    {
-        result = RETURN_OK.c_str();
-    }
-    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
-
-    _server->getCashMessageSizeRef(thread_num) = 0;
-    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
-}
-
 auto Application::commonChatGetMessages(char* data, size_t data_size, int thread_num) -> void
 {
     std::string query_str = "SELECT viewdate FROM Users WHERE id ='" + _connected_user_id[thread_num] + "'";
@@ -1282,11 +1367,8 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     auto new_column_num{0};
     _data_base->getQueryResult(new_msg, new_row_num, new_column_num);
 
-    auto err_ptr{_data_base->getMySQLError()};
-    std::cout << err_ptr << std::endl;
-
-    std::cout << "Old Messages number: " << old_row_num << std::endl;
-    std::cout << "New Messages number: " << new_row_num << std::endl;
+    // auto err_ptr{_data_base->getMySQLError()};
+    // std::cout << err_ptr << std::endl;
 
     _server->resizeCashMessageBuffer(thread_num, old_msg.size() + new_msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
@@ -1301,6 +1383,101 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     query_str = "UPDATE Users SET viewdate = now() WHERE id = '" + _connected_user_id[thread_num] + "'";
     _data_base->query(query_str.c_str());
 }
+
+auto Application::commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string chat_message{message};
+
+    std::string query_str = "INSERT INTO CommonMessages (user_id, message, creation_date)"
+                            "VALUES('" +
+                            _connected_user_id[thread_num] + "', '" + message + "', now())";
+
+    _data_base->query(query_str.c_str());
+    const char* result{nullptr};
+    if (auto err_ptr{_data_base->getMySQLError()})
+    {
+        result = RETURN_ERROR.c_str();
+        //std::cout << err_ptr << std::endl;
+    }
+    else
+    {
+        result = RETURN_OK.c_str();
+    }
+    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
+
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
+}
+
+auto Application::commonChatCheckMessage(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string message_id{message};
+
+    std::string query_msg = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
+                            "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE user_id = '" +
+                            _connected_user_id[thread_num] + "' AND  c.id = '" + message_id + "'";
+    _data_base->query(query_msg.c_str());
+
+    std::string msg{};
+    int msg_row_num{0};
+    int msg_column_num{0};
+    _data_base->getQueryResult(msg, msg_row_num, msg_column_num);
+
+    //auto err_ptr{_data_base->getMySQLError()};
+    //std::cout << err_ptr << std::endl;
+
+    _server->resizeCashMessageBuffer(thread_num, msg.size() + HEADER_SIZE);
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::COMMON_CHAT_CHECK_MESSAGE));
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), msg_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), msg_column_num);
+    if (msg_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), msg.c_str(), msg.size());
+}
+
+auto Application::commonChatEditMessage(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string msg_id{message};
+    std::string edited_message{message + msg_id.size() + 1};
+
+    std::string query_msg = "UPDATE CommonMessages SET message = '" + edited_message + "', edited = 1, editing_date = now() WHERE id = '" + msg_id +
+                            "' AND user_id = '" + _connected_user_id[thread_num] + "'";
+    _data_base->query(query_msg.c_str());
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
+
+
+    const char* result{nullptr};
+
+    if (auto err_ptr{_data_base->getMySQLError()})
+    {
+        result = RETURN_ERROR.c_str();
+        std::cout << err_ptr << std::endl;
+    }
+    else
+    {
+        result = RETURN_OK.c_str();
+    }
+    _server->resizeCashMessageBuffer(thread_num, strlen(result) + HEADER_SIZE);
+
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), result, strlen(result));
+}
+
+auto Application::commonChatDeleteMessage(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string msg_id{message};
+    std::string edited_message{message + msg_id.size() + 1};
+
+    std::string query_msg = "DELETE FROM CommonMessages WHERE id = '" + msg_id +
+                            "' AND user_id = '" + _connected_user_id[thread_num] + "'";
+    _data_base->query(query_msg.c_str());
+     auto err_ptr{_data_base->getMySQLError()};
+     std::cout << err_ptr << std::endl;
+}
+
+auto Application::newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void {}
+
 
 auto Application::createDataBases() -> void
 {

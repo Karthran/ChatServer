@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-const int DEFAULT_BUFLEN = 1024;
+const int DEFAULT_BUFLEN = 16384;
 
 class Application;
 class Server
@@ -28,16 +28,14 @@ private:
     bool _continue_flag{true};
 
     std::vector<std::thread> _clients;
-    std::vector<std::shared_ptr<char[]>> _cash_message{};  //////////////////////////////////////////////////////////
-    std::vector<size_t> _cash_message_size{};              ////////////////////////////////////////////////////
-    std::vector<size_t> _cash_message_buffer_size{};       //////////////////////////////////////////////////
+    std::vector<std::shared_ptr<char[]>> _cash_message{};  
+    std::vector<size_t> _cash_message_size{};              
+    std::vector<size_t> _cash_message_buffer_size{};      
     std::vector<size_t> _exchange_buffer_size{};
     std::vector<bool> _need_buffer_resize{};
-    std::vector<std::shared_ptr<char[]>> _exchange_message;  /////////////////////////////////////////////////////////
-    std::vector<size_t> _exchange_message_size;              /////////////////////////////////////////////////////
-    std::vector<size_t> _msg_from_client_size;               /////////////////////////////////////////////////////////////
-    //std::vector<bool> _in_message_ready{};
-    //std::vector<bool> _out_message_ready{};
+    std::vector<std::shared_ptr<char[]>> _exchange_message;  
+    std::vector<size_t> _exchange_message_size;             
+    std::vector<size_t> _msg_from_client_size;               
 
     int thread_count{0};
     volatile bool continue_flag{true};
@@ -48,5 +46,4 @@ private:
     auto client_loop(int thread_number, int connection) -> void;
     auto server_thread() -> int;
 #endif
-//    auto main_loop(Application* app) -> void;
 };
