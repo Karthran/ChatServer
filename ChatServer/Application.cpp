@@ -1397,7 +1397,7 @@ auto Application::commonChatAddMessage(char* message, size_t message_size, int t
     if (auto err_ptr{_data_base->getMySQLError()})
     {
         result = RETURN_ERROR.c_str();
-        //std::cout << err_ptr << std::endl;
+        // std::cout << err_ptr << std::endl;
     }
     else
     {
@@ -1423,8 +1423,8 @@ auto Application::commonChatCheckMessage(char* message, size_t message_size, int
     int msg_column_num{0};
     _data_base->getQueryResult(msg, msg_row_num, msg_column_num);
 
-    //auto err_ptr{_data_base->getMySQLError()};
-    //std::cout << err_ptr << std::endl;
+    // auto err_ptr{_data_base->getMySQLError()};
+    // std::cout << err_ptr << std::endl;
 
     _server->resizeCashMessageBuffer(thread_num, msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
@@ -1445,7 +1445,6 @@ auto Application::commonChatEditMessage(char* message, size_t message_size, int 
 
     auto err_ptr{_data_base->getMySQLError()};
     std::cout << err_ptr << std::endl;
-
 
     const char* result{nullptr};
 
@@ -1469,15 +1468,57 @@ auto Application::commonChatDeleteMessage(char* message, size_t message_size, in
     std::string msg_id{message};
     std::string edited_message{message + msg_id.size() + 1};
 
-    std::string query_msg = "DELETE FROM CommonMessages WHERE id = '" + msg_id +
-                            "' AND user_id = '" + _connected_user_id[thread_num] + "'";
+    std::string query_msg = "DELETE FROM CommonMessages WHERE id = '" + msg_id + "' AND user_id = '" + _connected_user_id[thread_num] + "'";
     _data_base->query(query_msg.c_str());
-     auto err_ptr{_data_base->getMySQLError()};
-     std::cout << err_ptr << std::endl;
+
+    query_msg = "SET @count = 0";
+    _data_base->query(query_msg.c_str());
+
+    query_msg = "UPDATE CommonMessages SET CommonMessages.id = @count:= @count + 1";
+    _data_base->query(query_msg.c_str());
+
+    query_msg = "ALTER TABLE CommonMessages AUTO_INCREMENT = 1";
+    _data_base->query(query_msg.c_str());
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
 }
 
-auto Application::newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void {}
+auto Application::newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string query_str = "SELECT viewdate FROM Users WHERE id ='" + _connected_user_id[thread_num] + "'";
+    _data_base->query(query_str.c_str());
 
+    std::string query_viewdate{};
+    int row_num{0};
+    int column_num{0};
+    _data_base->getQueryResult(query_viewdate, row_num, column_num);
+    std::string lastview{query_viewdate.c_str()};
+
+    query_str = "SELECT c.id, count(*) "
+                "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date > '" +
+                lastview + "' GROUP BY c.user_id";
+    _data_base->query(query_str.c_str());
+
+    std::string new_msg{};
+    auto new_row_num{0};
+    auto new_column_num{0};
+    _data_base->getQueryResult(new_msg, new_row_num, new_column_num);
+
+    std::cout << "new_row_num: " << new_row_num << std::endl;
+    std::cout << "new_column_num: " << new_column_num << std::endl;
+
+
+    _server->resizeCashMessageBuffer(thread_num, new_msg.size() + HEADER_SIZE);
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::NEW_MESSAGES_IN_COMMON_CHAT));
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_column_num);
+    if (new_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_msg.c_str(), new_msg.size());
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
+}
 
 auto Application::createDataBases() -> void
 {
