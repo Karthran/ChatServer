@@ -41,6 +41,12 @@ auto Application::run() -> void
 
     std::cout << "Type 'end' and press Enter for quit!" << std::endl;
 
+    //std::string server_address{};
+    //std::cout << "MySQL server address(press Enter for default 'localhost'): " << std::endl;
+    //std::getline(std::cin, server_address);
+    //if (!server_address.size()) server_address = "localhost";
+
+
     //   load();
 
     _data_base = std::make_unique<DataBase>("localhost", "root", "rksm", "testdb", 0);
@@ -1508,10 +1514,10 @@ auto Application::newMessagesInCommonChat(char* message, size_t message_size, in
     std::cout << "new_row_num: " << new_row_num << std::endl;
     std::cout << "new_column_num: " << new_column_num << std::endl;
 
-
     _server->resizeCashMessageBuffer(thread_num, new_msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
-    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::NEW_MESSAGES_IN_COMMON_CHAT));
+    addToBuffer(
+        _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::NEW_MESSAGES_IN_COMMON_CHAT));
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_row_num);
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_column_num);
     if (new_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_msg.c_str(), new_msg.size());
