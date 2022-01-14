@@ -5,6 +5,7 @@
 #endif
 
 #include <iostream>
+#include<cstring>
 #include <cassert>
 #include <iomanip>
 #include <exception>
@@ -1501,7 +1502,7 @@ auto Application::newMessagesInCommonChat(char* message, size_t message_size, in
     _data_base->getQueryResult(query_viewdate, row_num, column_num);
     std::string lastview{query_viewdate.c_str()};
 
-    query_str = "SELECT c.id, count(*) "
+    query_str = "SELECT c.user_id, count(*) "
                 "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date > '" +
                 lastview + "' GROUP BY c.user_id";
     _data_base->query(query_str.c_str());
