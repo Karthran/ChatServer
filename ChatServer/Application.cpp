@@ -1532,8 +1532,12 @@ auto Application::newMessagesInCommonChat(char* message, size_t message_size, in
 
     query_str = "SELECT c.user_id, count(*) "
                 "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date > '" +
-                lastview + "' GROUP BY c.user_id";
+                lastview + "' AND  c.user_id != '" + _connected_user_id[thread_num] + "' GROUP BY c.user_id";
     _data_base->query(query_str.c_str());
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
+
 
     std::string new_msg{};
     auto new_row_num{0};
@@ -1551,8 +1555,6 @@ auto Application::newMessagesInCommonChat(char* message, size_t message_size, in
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_column_num);
     if (new_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), new_msg.c_str(), new_msg.size());
 
-    auto err_ptr{_data_base->getMySQLError()};
-    std::cout << err_ptr << std::endl;
 }
 
 auto Application::viewUsersIDNameSurname(char* message, size_t message_size, int thread_num) -> void 
