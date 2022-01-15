@@ -207,8 +207,8 @@ auto Server::server_thread(int thread_number) -> void
     closesocket(ClientSocket);
     WSACleanup();
 
-    _exchange_message[thread_number] = nullptr;
-    _cash_message[thread_number] = nullptr;
+//    _exchange_message[thread_number] = nullptr;
+//    _cash_message[thread_number] = nullptr;
 
     return;
 }
@@ -268,8 +268,8 @@ auto Server::client_loop(int thread_number, int connection) -> void
     // close socket
     close(connection);
 
-   _exchange_message[thread_number] = nullptr;
-    _cash_message[thread_number] = nullptr;
+//   _exchange_message[thread_number] = nullptr;
+//    _cash_message[thread_number] = nullptr;
 
     return;
 }
