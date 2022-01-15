@@ -50,6 +50,7 @@ private:
     auto onNewMessagesInCommonChat(char* message, int thread_num) -> void;
     auto onViewUsersIDNameSurname(char* message, int thread_num) -> void;
     auto onGetPrivateChatID(char* message, int thread_num) -> void;
+    auto onPrivateChatAddMessage(char* message, int thread_num) -> void;
 
     auto onStop(char* message, int thread_num) -> void;
     auto onError(char* message, int thread_num) const -> void;
@@ -72,6 +73,7 @@ private:
     auto newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void;
     auto viewUsersIDNameSurname(char* message, size_t message_size, int thread_num) -> void;
     auto getPrivateChatID(char* message, size_t message_size, int thread_num) -> void;
+    auto privateChatAddMessage(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
 };
