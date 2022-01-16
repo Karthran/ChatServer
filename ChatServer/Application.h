@@ -48,9 +48,11 @@ private:
     auto onCommonChatEditMessage(char* message, int thread_num) -> void;
     auto onCommonChatDeleteMessage(char* message, int thread_num) -> void;
     auto onNewMessagesInCommonChat(char* message, int thread_num) -> void;
+    auto onNewMessagesInPrivateChat(char* message, int thread_num) -> void;
     auto onViewUsersIDNameSurname(char* message, int thread_num) -> void;
     auto onGetPrivateChatID(char* message, int thread_num) -> void;
     auto onPrivateChatAddMessage(char* message, int thread_num) -> void;
+    auto onPrivateChatGetMessages(char* message, int thread_num) -> void;
 
     auto onStop(char* message, int thread_num) -> void;
     auto onError(char* message, int thread_num) const -> void;
@@ -71,9 +73,11 @@ private:
     auto commonChatEditMessage(char* message, size_t message_size, int thread_num) -> void;
     auto commonChatDeleteMessage(char* message, size_t message_size, int thread_num) -> void;
     auto newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void;
+    auto newMessagesInPrivateChat(char* message, size_t message_size, int thread_num) -> void;
     auto viewUsersIDNameSurname(char* message, size_t message_size, int thread_num) -> void;
     auto getPrivateChatID(char* message, size_t message_size, int thread_num) -> void;
     auto privateChatAddMessage(char* message, size_t message_size, int thread_num) -> void;
+    auto privateChatGetMessages(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
 };
