@@ -809,6 +809,7 @@ auto Application::reaction(char* message, int thread_num) -> void
             case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: onNewMessagesInCommonChat(message, thread_num); break;
             case OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT: onNewMessagesInPrivateChat(message, thread_num); break;
             case OperationCode::VIEW_USERS_ID_NAME_SURNAME: onViewUsersIDNameSurname(message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: onViewUsersWithNewMesssages(message, thread_num); break;
             case OperationCode::GET_PRIVATE_CHAT_ID: onGetPrivateChatID(message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_ADD_MESSAGE: onPrivateChatAddMessage(message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_GET_MESSAGES: onPrivateChatGetMessages(message, thread_num); break;
@@ -1138,6 +1139,33 @@ auto Application::onViewUsersIDNameSurname(char* message, int thread_num) -> voi
         case OperationCode::CHECK_SIZE:
         {
             viewUsersIDNameSurname(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onViewUsersWithNewMesssages(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            viewUsersWithNewMesssages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
             _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
             _server->getMessageSizeRef(thread_num) = 0;
             addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
@@ -1614,9 +1642,9 @@ auto Application::newMessagesInCommonChat(char* message, size_t message_size, in
 
 auto Application::newMessagesInPrivateChat(char* message, size_t message_size, int thread_num) -> void
 {
-    std::string query_str = " select user_id, count(*) from messages where chat_id in (select id from chat where first_user_id = '" +
-                            _connected_user_id[thread_num] + "' or second_user_id = '" + _connected_user_id[thread_num] + "') and user_id != '" +
-                            _connected_user_id[thread_num] + "' and status != 'done'  group by user_id";
+    std::string query_str = " SELECT user_id, count(*) FROM Messages WHERE chat_id IN (SELECT id FROM Chat WHERE first_user_id = '" +
+                            _connected_user_id[thread_num] + "' OR second_user_id = '" + _connected_user_id[thread_num] + "') AND user_id != '" +
+                            _connected_user_id[thread_num] + "' AND status != 'done'  GROUP BY user_id";
     _data_base->query(query_str.c_str());
 
     auto err_ptr{_data_base->getMySQLError()};
@@ -1641,6 +1669,32 @@ auto Application::viewUsersIDNameSurname(char* message, size_t message_size, int
     std::string query_str = "SELECT id, name, surname FROM Users";
 
     _data_base->query(query_str.c_str());
+
+    std::string users_data{};
+    auto data_row_num{0};
+    auto data_column_num{0};
+    _data_base->getQueryResult(users_data, data_row_num, data_column_num);
+
+    _server->resizeCashMessageBuffer(thread_num, users_data.size() + HEADER_SIZE);
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(
+        _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::VIEW_USERS_ID_NAME_SURNAME));
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_column_num);
+    if (data_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), users_data.c_str(), users_data.size());
+}
+
+auto Application::viewUsersWithNewMesssages(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string query_str = "SELECT user_id, count(*), name, surname FROM Messages AS m JOIN Users AS u ON m.user_id = u.id WHERE chat_id IN(SELECT id FROM "
+                            "Chat WHERE first_user_id = '" +
+                            _connected_user_id[thread_num] + "' OR second_user_id = '" + _connected_user_id[thread_num] + "') AND user_id != '" +
+                            _connected_user_id[thread_num] + "' AND status != 'done' GROUP BY user_id";
+
+    _data_base->query(query_str.c_str());
+
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
 
     std::string users_data{};
     auto data_row_num{0};
