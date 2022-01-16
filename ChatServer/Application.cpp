@@ -809,7 +809,8 @@ auto Application::reaction(char* message, int thread_num) -> void
             case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: onNewMessagesInCommonChat(message, thread_num); break;
             case OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT: onNewMessagesInPrivateChat(message, thread_num); break;
             case OperationCode::VIEW_USERS_ID_NAME_SURNAME: onViewUsersIDNameSurname(message, thread_num); break;
-            case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: onViewUsersWithNewMesssages(message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: onViewUsersWithNewMessages(message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT: onViewUsersWithPrivateChat(message, thread_num); break;
             case OperationCode::GET_PRIVATE_CHAT_ID: onGetPrivateChatID(message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_ADD_MESSAGE: onPrivateChatAddMessage(message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_GET_MESSAGES: onPrivateChatGetMessages(message, thread_num); break;
@@ -1155,7 +1156,7 @@ auto Application::onViewUsersIDNameSurname(char* message, int thread_num) -> voi
     }
 }
 
-auto Application::onViewUsersWithNewMesssages(char* message, int thread_num) -> void
+auto Application::onViewUsersWithNewMessages(char* message, int thread_num) -> void
 {
     auto code_operation{-1};
     getFromBuffer(message, sizeof(int), code_operation);
@@ -1165,7 +1166,34 @@ auto Application::onViewUsersWithNewMesssages(char* message, int thread_num) -> 
     {
         case OperationCode::CHECK_SIZE:
         {
-            viewUsersWithNewMesssages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            viewUsersWithNewMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
+}
+
+auto Application::onViewUsersWithPrivateChat(char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            viewUsersWithPrivateChat(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
             _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
             _server->getMessageSizeRef(thread_num) = 0;
             addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
@@ -1684,12 +1712,33 @@ auto Application::viewUsersIDNameSurname(char* message, size_t message_size, int
     if (data_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), users_data.c_str(), users_data.size());
 }
 
-auto Application::viewUsersWithNewMesssages(char* message, size_t message_size, int thread_num) -> void
+auto Application::viewUsersWithNewMessages(char* message, size_t message_size, int thread_num) -> void
 {
     std::string query_str = "SELECT user_id, count(*), name, surname FROM Messages AS m JOIN Users AS u ON m.user_id = u.id WHERE chat_id IN(SELECT id FROM "
                             "Chat WHERE first_user_id = '" +
                             _connected_user_id[thread_num] + "' OR second_user_id = '" + _connected_user_id[thread_num] + "') AND user_id != '" +
                             _connected_user_id[thread_num] + "' AND status != 'done' GROUP BY user_id";
+
+    _data_base->query(query_str.c_str());
+
+    std::string users_data{};
+    auto data_row_num{0};
+    auto data_column_num{0};
+    _data_base->getQueryResult(users_data, data_row_num, data_column_num);
+
+    _server->resizeCashMessageBuffer(thread_num, users_data.size() + HEADER_SIZE);
+    _server->getCashMessageSizeRef(thread_num) = 0;
+    addToBuffer(
+        _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::VIEW_USERS_ID_NAME_SURNAME));
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_row_num);
+    addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_column_num);
+    if (data_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), users_data.c_str(), users_data.size());
+}
+
+auto Application::viewUsersWithPrivateChat(char* message, size_t message_size, int thread_num) -> void
+{
+    std::string query_str = "SELECT u.id, name, surname FROM Chat AS c JOIN Users AS u ON c.first_user_id = u.id OR c.second_user_id = u.id WHERE u.id != '" +
+                            _connected_user_id[thread_num] + "'";
 
     _data_base->query(query_str.c_str());
 
@@ -1704,7 +1753,7 @@ auto Application::viewUsersWithNewMesssages(char* message, size_t message_size, 
     _server->resizeCashMessageBuffer(thread_num, users_data.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
     addToBuffer(
-        _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::VIEW_USERS_ID_NAME_SURNAME));
+        _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT));
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_row_num);
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), data_column_num);
     if (data_row_num) addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), users_data.c_str(), users_data.size());
