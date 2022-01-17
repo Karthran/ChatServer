@@ -26,7 +26,7 @@ private:
     std::vector<int> _signed_user{};
     std::map<int, std::string> _connected_user_id{};
 
-
+    // std::vector<void(Application::*)(char* message, size_t message_size, int thread_num)> _func_ptr{};
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;
@@ -84,4 +84,5 @@ private:
     auto privateChatDeleteMessages(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
+    auto exchangeWithClient(void(Application::*func)(char* , size_t , int ), char* message, int thread_num) -> void;
 };

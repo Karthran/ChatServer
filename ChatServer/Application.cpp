@@ -6,19 +6,19 @@
 
 #include <iostream>
 #include <cstring>
-#include <cassert>
-#include <iomanip>
+//#include <cassert>
+//#include <iomanip>
 #include <exception>
-#include <fstream>
-#include <sstream>
-#include <mutex>
+//#include <fstream>
+//#include <sstream>
+//#include <mutex>
 
 #include "Application.h"
 #include "Server.h"
 #include "core.h"
 #include "Utils.h"
 
-std::mutex mutex{};
+//std::mutex mutex{};
 
 Application::Application()
 {
@@ -93,26 +93,26 @@ auto Application::reaction(char* message, int thread_num) -> void
         {
             case OperationCode::STOP: onStop(message, thread_num); break;
             case OperationCode::CHECK_SIZE: onCheckSize(message, thread_num); break;
-            case OperationCode::CHECK_EMAIL: onCheckEmail(message, thread_num); break;
-            case OperationCode::CHECK_LOGIN: onCheckLogin(message, thread_num); break;
-            case OperationCode::REGISTRATION: onRegistration(message, thread_num); break;
-            case OperationCode::SIGN_IN: onSignIn(message, thread_num); break;
-            case OperationCode::COMMON_CHAT_GET_MESSAGES: onCommonChatGetMessages(message, thread_num); break;
-            case OperationCode::COMMON_CHAT_ADD_MESSAGE: onCommonChatAddMessage(message, thread_num); break;
-            case OperationCode::COMMON_CHAT_CHECK_MESSAGE: onCommonChatCheckMessage(message, thread_num); break;
-            case OperationCode::PRIVATE_CHAT_CHECK_MESSAGE: onPrivateChatCheckMessage(message, thread_num); break;
-            case OperationCode::COMMON_CHAT_EDIT_MESSAGE: onCommonChatEditMessage(message, thread_num); break;
-            case OperationCode::COMMON_CHAT_DELETE_MESSAGE: onCommonChatDeleteMessage(message, thread_num); break;
-            case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: onNewMessagesInCommonChat(message, thread_num); break;
-            case OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT: onNewMessagesInPrivateChat(message, thread_num); break;
-            case OperationCode::VIEW_USERS_ID_NAME_SURNAME: onViewUsersIDNameSurname(message, thread_num); break;
-            case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: onViewUsersWithNewMessages(message, thread_num); break;
-            case OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT: onViewUsersWithPrivateChat(message, thread_num); break;
-            case OperationCode::GET_PRIVATE_CHAT_ID: onGetPrivateChatID(message, thread_num); break;
-            case OperationCode::PRIVATE_CHAT_ADD_MESSAGE: onPrivateChatAddMessage(message, thread_num); break;
-            case OperationCode::PRIVATE_CHAT_GET_MESSAGES: onPrivateChatGetMessages(message, thread_num); break;
-            case OperationCode::PRIVATE_CHAT_EDIT_MESSAGE: onPrivateChatEditMessages(message, thread_num); break;
-            case OperationCode::PRIVATE_CHAT_DELETE_MESSAGE: onPrivateChatDeleteMessages(message, thread_num); break;
+            case OperationCode::CHECK_EMAIL: exchangeWithClient(&Application::checkEmail, message, thread_num); break;
+            case OperationCode::CHECK_LOGIN: exchangeWithClient(&Application::checkLogin, message, thread_num); break;
+            case OperationCode::REGISTRATION: exchangeWithClient(&Application::registration, message, thread_num); break;
+            case OperationCode::SIGN_IN: exchangeWithClient(&Application::signin, message, thread_num); break;
+            case OperationCode::COMMON_CHAT_GET_MESSAGES: exchangeWithClient(&Application::commonChatGetMessages, message, thread_num); break;
+            case OperationCode::COMMON_CHAT_ADD_MESSAGE: exchangeWithClient(&Application::commonChatAddMessage, message, thread_num); break;
+            case OperationCode::COMMON_CHAT_CHECK_MESSAGE: exchangeWithClient(&Application::commonChatCheckMessage, message, thread_num); break;
+            case OperationCode::PRIVATE_CHAT_CHECK_MESSAGE: exchangeWithClient(&Application::privateChatCheckMessage, message, thread_num); break;
+            case OperationCode::COMMON_CHAT_EDIT_MESSAGE: exchangeWithClient(&Application::commonChatEditMessage,message, thread_num); break;
+            case OperationCode::COMMON_CHAT_DELETE_MESSAGE: exchangeWithClient(&Application::commonChatDeleteMessage, message, thread_num); break;
+            case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: exchangeWithClient(&Application::newMessagesInCommonChat, message, thread_num); break;
+            case OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT: exchangeWithClient(&Application::newMessagesInPrivateChat, message, thread_num); break;
+            case OperationCode::VIEW_USERS_ID_NAME_SURNAME: exchangeWithClient(&Application::viewUsersIDNameSurname, message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: exchangeWithClient(&Application::viewUsersWithNewMessages, message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT: exchangeWithClient(&Application::viewUsersWithPrivateChat,message, thread_num); break;
+            case OperationCode::GET_PRIVATE_CHAT_ID: exchangeWithClient(&Application::getPrivateChatID, message, thread_num); break;
+            case OperationCode::PRIVATE_CHAT_ADD_MESSAGE: exchangeWithClient(&Application::privateChatAddMessage, message, thread_num); break;
+            case OperationCode::PRIVATE_CHAT_GET_MESSAGES: exchangeWithClient(&Application::privateChatGetMessages, message, thread_num); break;
+            case OperationCode::PRIVATE_CHAT_EDIT_MESSAGE: exchangeWithClient(&Application::privateChatEditMessages, message, thread_num); break;
+            case OperationCode::PRIVATE_CHAT_DELETE_MESSAGE: exchangeWithClient(&Application::privateChatDeleteMessages, message, thread_num); break;
             default: return onError(message, thread_num); break;
         }
     }
@@ -135,545 +135,7 @@ auto Application::onCheckSize(char* message, int thread_num) const -> void
     _server->setMsgFromClientSize(message_length, thread_num);
 }
 
-auto Application::onCheckEmail(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            checkEmail(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCheckLogin(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            checkLogin(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onRegistration(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            registration(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onSignIn(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            signin(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCommonChatGetMessages(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            commonChatGetMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCommonChatAddMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            commonChatAddMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCommonChatCheckMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            commonChatCheckMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onPrivateChatCheckMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            privateChatCheckMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCommonChatEditMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            commonChatEditMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onCommonChatDeleteMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            commonChatDeleteMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onNewMessagesInCommonChat(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            newMessagesInCommonChat(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onNewMessagesInPrivateChat(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            newMessagesInPrivateChat(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onViewUsersIDNameSurname(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            viewUsersIDNameSurname(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onViewUsersWithNewMessages(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            viewUsersWithNewMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onViewUsersWithPrivateChat(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            viewUsersWithPrivateChat(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onGetPrivateChatID(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            getPrivateChatID(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onPrivateChatAddMessage(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            privateChatAddMessage(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onPrivateChatGetMessages(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            privateChatGetMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onPrivateChatEditMessages(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            privateChatEditMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onPrivateChatDeleteMessages(char* message, int thread_num) -> void
-{
-    auto code_operation{-1};
-    getFromBuffer(message, sizeof(int), code_operation);
-
-    auto code = static_cast<OperationCode>(code_operation);
-    switch (code)
-    {
-        case OperationCode::CHECK_SIZE:
-        {
-            privateChatDeleteMessages(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
-            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        case OperationCode::READY:
-        {
-            _server->getMessageSizeRef(thread_num) = 0;
-            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
-            break;
-        }
-        default: return onError(message, thread_num); break;
-    }
-}
-
-auto Application::onStop(char* message, int thread_num) -> void
-{
-}
+auto Application::onStop(char* message, int thread_num) -> void {}
 
 auto Application::onError(char* message, int thread_num) const -> void
 {
@@ -976,8 +438,8 @@ auto Application::privateChatCheckMessage(char* message, size_t message_size, in
     int msg_column_num{0};
     _data_base->getQueryResult(msg, msg_row_num, msg_column_num);
 
-    //auto err_ptr{_data_base->getMySQLError()};
-    //std::cout << err_ptr << std::endl;
+    // auto err_ptr{_data_base->getMySQLError()};
+    // std::cout << err_ptr << std::endl;
 
     _server->resizeCashMessageBuffer(thread_num, msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
@@ -1377,8 +839,8 @@ auto Application::privateChatDeleteMessages(char* message, size_t message_size, 
     query_msg = "ALTER TABLE Messages AUTO_INCREMENT = 1";
     _data_base->query(query_msg.c_str());
 
-     auto err_ptr{_data_base->getMySQLError()};
-     std::cout << err_ptr << std::endl;
+    auto err_ptr{_data_base->getMySQLError()};
+    std::cout << err_ptr << std::endl;
 }
 
 auto Application::createDataBases() -> void
@@ -1425,6 +887,33 @@ auto Application::createDataBases() -> void
     //"('Иван', 'Суржиков', lower('Inav777'), lower('Иван_Суржиков@почта.ру'), now())");
     //"('Проверка_Поля_на_достаточно_длинную_и_нестандартную_фамилию', 'такое_же_длинное_имя_с_нестандартными_символами_#!@$#?\_', lower('Login'),
     // lower('Почта@русская.Ру'), now())");
+}
+
+auto Application::exchangeWithClient(void (Application::*func)(char*, size_t, int), char* message, int thread_num) -> void
+{
+    auto code_operation{-1};
+    getFromBuffer(message, sizeof(int), code_operation);
+
+    auto code = static_cast<OperationCode>(code_operation);
+    switch (code)
+    {
+        case OperationCode::CHECK_SIZE:
+        {
+            (this->*func)(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        case OperationCode::READY:
+        {
+            _server->getMessageSizeRef(thread_num) = 0;
+            addToBuffer(message, _server->getMessageSizeRef(thread_num), _server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num));
+            break;
+        }
+        default: return onError(message, thread_num); break;
+    }
 }
 
 auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, int value) const -> void
