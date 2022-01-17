@@ -45,6 +45,7 @@ private:
     auto onCommonChatGetMessages(char* message, int thread_num) -> void;
     auto onCommonChatAddMessage(char* message, int thread_num) -> void;
     auto onCommonChatCheckMessage(char* message, int thread_num) -> void;
+    auto onPrivateChatCheckMessage(char* message, int thread_num) -> void;
     auto onCommonChatEditMessage(char* message, int thread_num) -> void;
     auto onCommonChatDeleteMessage(char* message, int thread_num) -> void;
     auto onNewMessagesInCommonChat(char* message, int thread_num) -> void;
@@ -55,6 +56,8 @@ private:
     auto onGetPrivateChatID(char* message, int thread_num) -> void;
     auto onPrivateChatAddMessage(char* message, int thread_num) -> void;
     auto onPrivateChatGetMessages(char* message, int thread_num) -> void;
+    auto onPrivateChatEditMessages(char* message, int thread_num) -> void;
+    auto onPrivateChatDeleteMessages(char* message, int thread_num) -> void;
 
     auto onStop(char* message, int thread_num) -> void;
     auto onError(char* message, int thread_num) const -> void;
@@ -72,6 +75,7 @@ private:
     auto commonChatGetMessages(char* data, size_t data_size, int thread_num) -> void;
     auto commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void;
     auto commonChatCheckMessage(char* message, size_t message_size, int thread_num) -> void;
+    auto privateChatCheckMessage(char* message, size_t message_size, int thread_num) -> void;
     auto commonChatEditMessage(char* message, size_t message_size, int thread_num) -> void;
     auto commonChatDeleteMessage(char* message, size_t message_size, int thread_num) -> void;
     auto newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void;
@@ -82,6 +86,8 @@ private:
     auto getPrivateChatID(char* message, size_t message_size, int thread_num) -> void;
     auto privateChatAddMessage(char* message, size_t message_size, int thread_num) -> void;
     auto privateChatGetMessages(char* message, size_t message_size, int thread_num) -> void;
+    auto privateChatEditMessages(char* message, size_t message_size, int thread_num) -> void;
+    auto privateChatDeleteMessages(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
 };
