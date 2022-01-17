@@ -4,13 +4,7 @@
 #include <vector>
 #include <map>
 #include "DataBase.h"
-
-class Server;
-
-// class Chat;
-// class User;
-// class PasswordHash;
-// class NewMessages;
+#include "Server.h"
 
 class Application
 {
@@ -21,8 +15,8 @@ public:
     auto reaction(char* message, int thread_num) -> void;
 
 private:
-    Server* _server{nullptr};
-    std::unique_ptr<DataBase> _data_base{nullptr};
+    std::unique_ptr<Server> _server{};
+    std::unique_ptr<DataBase> _data_base{};
 
     int _current_user_number{0};
     int _current_chat_number{0};

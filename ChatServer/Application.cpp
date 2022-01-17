@@ -55,7 +55,7 @@ auto Application::run() -> void
 
     createDataBases();
 
-    _server = new Server(this);
+    _server = std::make_unique<Server>(this);
     _server->run();
 
     std::string msg{};
@@ -70,8 +70,6 @@ auto Application::run() -> void
     }
 
     //   save();
-    delete _server;
-
     return;
 }
 
