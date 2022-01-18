@@ -328,7 +328,7 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     std::string lastview{query_viewdate.c_str()};
     query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
                 "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date <= '" +
-                lastview + "'";
+                lastview + "' ORDER BY c.id";
     _data_base->query(query_str.c_str());
 
     std::string old_msg{};
@@ -337,7 +337,7 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     _data_base->getQueryResult(old_msg, old_row_num, old_column_num);
     query_str = "SELECT c.id, name, surname, user_id, message, creation_date, edited, editing_date "
                 "FROM  Users AS u JOIN CommonMessages AS c ON u.id = c.user_id WHERE creation_date > '" +
-                lastview + "'";
+                lastview + "' ORDER BY c.id";
     _data_base->query(query_str.c_str());
 
     std::string new_msg{};
@@ -716,7 +716,7 @@ auto Application::privateChatGetMessages(char* message, size_t message_size, int
     {
         query_str = "SELECT m.id, name, surname, user_id, message, creation_date, edited, editing_date, status "
                     "FROM  Users AS u JOIN Messages AS m ON u.id = m.user_id WHERE chat_id = '" +
-                    chat_id + "'";
+                    chat_id + "'ORDER BY m.id";
         _data_base->query(query_str.c_str());
 
         std::string msg{};
@@ -746,7 +746,7 @@ auto Application::privateChatGetMessages(char* message, size_t message_size, int
 
     query_str = "SELECT m.id, name, surname, user_id, message, creation_date, edited, editing_date, status "
                 "FROM  Users AS u JOIN Messages AS m ON u.id = m.user_id WHERE creation_date < '" +
-                lastview + "' AND chat_id = '" + chat_id + "'";
+                lastview + "' AND chat_id = '" + chat_id + "' ORDER BY m.id";
     _data_base->query(query_str.c_str());
 
     std::string old_msg{};
@@ -755,7 +755,7 @@ auto Application::privateChatGetMessages(char* message, size_t message_size, int
     _data_base->getQueryResult(old_msg, old_row_num, old_column_num);
     query_str = "SELECT m.id, name, surname, user_id, message, creation_date, edited, editing_date, status "
                 "FROM  Users AS u JOIN Messages AS m ON u.id = m.user_id WHERE creation_date >= '" +
-                lastview + "' AND chat_id = '" + chat_id + "'";
+                lastview + "' AND chat_id = '" + chat_id + "' ORDER BY m.id";
     _data_base->query(query_str.c_str());
 
     std::string new_msg{};
