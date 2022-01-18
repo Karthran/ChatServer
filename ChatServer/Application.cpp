@@ -17,8 +17,7 @@
 #include "Server.h"
 #include "core.h"
 #include "Utils.h"
-
-//std::mutex mutex{};
+#include "FileUtils.h"
 
 Application::Application()
 {
@@ -29,23 +28,15 @@ auto Application::run() -> void
 {
     Utils::printOSVersion();
 
-    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat Dedicated Server!" << RESET << std::endl;
+    inputDBServerData();
 
+    std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat Dedicated Server!" << RESET << std::endl;
     std::cout << "Type 'end' and press Enter for quit!" << std::endl;
 
-    // std::string server_address{};
-    // std::cout << "MySQL server address(press Enter for default 'localhost'): " << std::endl;
-    // std::getline(std::cin, server_address);
-    // if (!server_address.size()) server_address = "localhost";
-
-    //   load();
-
-    _data_base = std::make_unique<DataBase>("localhost", "root", "rksm", "testdb", 0);
+    _data_base = std::make_unique<DataBase>(_db_server_address.c_str(), _db_server_login.c_str(), _db_server_password.c_str(), _db_database_name.c_str(), 0);
     _data_base->init();
     _data_base->connect();
-
     createDataBases();
-
     _server = std::make_unique<Server>(this);
     _server->run();
 
@@ -59,8 +50,6 @@ auto Application::run() -> void
             break;
         }
     }
-
-    //   save();
     return;
 }
 
@@ -101,13 +90,13 @@ auto Application::reaction(char* message, int thread_num) -> void
             case OperationCode::COMMON_CHAT_ADD_MESSAGE: exchangeWithClient(&Application::commonChatAddMessage, message, thread_num); break;
             case OperationCode::COMMON_CHAT_CHECK_MESSAGE: exchangeWithClient(&Application::commonChatCheckMessage, message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_CHECK_MESSAGE: exchangeWithClient(&Application::privateChatCheckMessage, message, thread_num); break;
-            case OperationCode::COMMON_CHAT_EDIT_MESSAGE: exchangeWithClient(&Application::commonChatEditMessage,message, thread_num); break;
+            case OperationCode::COMMON_CHAT_EDIT_MESSAGE: exchangeWithClient(&Application::commonChatEditMessage, message, thread_num); break;
             case OperationCode::COMMON_CHAT_DELETE_MESSAGE: exchangeWithClient(&Application::commonChatDeleteMessage, message, thread_num); break;
             case OperationCode::NEW_MESSAGES_IN_COMMON_CHAT: exchangeWithClient(&Application::newMessagesInCommonChat, message, thread_num); break;
             case OperationCode::NEW_MESSAGES_IN_PRIVATE_CHAT: exchangeWithClient(&Application::newMessagesInPrivateChat, message, thread_num); break;
             case OperationCode::VIEW_USERS_ID_NAME_SURNAME: exchangeWithClient(&Application::viewUsersIDNameSurname, message, thread_num); break;
             case OperationCode::VIEW_USERS_WITH_NEW_MESSAGES: exchangeWithClient(&Application::viewUsersWithNewMessages, message, thread_num); break;
-            case OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT: exchangeWithClient(&Application::viewUsersWithPrivateChat,message, thread_num); break;
+            case OperationCode::VIEW_USERS_WITH_PRIVATE_CHAT: exchangeWithClient(&Application::viewUsersWithPrivateChat, message, thread_num); break;
             case OperationCode::GET_PRIVATE_CHAT_ID: exchangeWithClient(&Application::getPrivateChatID, message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_ADD_MESSAGE: exchangeWithClient(&Application::privateChatAddMessage, message, thread_num); break;
             case OperationCode::PRIVATE_CHAT_GET_MESSAGES: exchangeWithClient(&Application::privateChatGetMessages, message, thread_num); break;
@@ -466,7 +455,7 @@ auto Application::commonChatEditMessage(char* message, size_t message_size, int 
     if (auto err_ptr{_data_base->getMySQLError()})
     {
         result = RETURN_ERROR.c_str();
-        std::cout << err_ptr << std::endl;
+        //      std::cout << err_ptr << std::endl;
     }
     else
     {
@@ -914,6 +903,43 @@ auto Application::exchangeWithClient(void (Application::*func)(char*, size_t, in
         }
         default: return onError(message, thread_num); break;
     }
+}
+
+auto Application::inputDBServerData() -> void
+{
+    std::string server_address{};
+    std::string server_login{};
+    std::string server_password{};
+    std::string database_name{};
+
+    File load_file(_self_path + std::string("data.txt"), std::fstream::in);
+    load_file.read(server_address);
+    load_file.read(server_login);
+    load_file.read(server_password);
+    load_file.read(database_name);
+
+    std::cout << "MySQL server address(press Enter for default '" + server_address + "'): ";
+    std::getline(std::cin, _db_server_address);
+    if (!_db_server_address.size()) _db_server_address = server_address;
+
+    std::cout << "MySQL server login(press Enter for default '" + server_login + "'): ";
+    std::getline(std::cin, _db_server_login);
+    if (!_db_server_login.size()) _db_server_login = server_login;
+
+    std::cout << "MySQL server password(press Enter for default '" + server_password + "'): ";
+    Utils::getPassword(_db_server_password, "");
+    if (!_db_server_password.size()) _db_server_password = server_password;
+
+    std::cout << "MySQL Database Name(press Enter for default '" + database_name + "'): ";
+    std::getline(std::cin, _db_database_name);
+    if (!_db_database_name.size()) _db_database_name = database_name;
+
+    File save_file(_self_path + std::string("data.txt"), std::fstream::out);
+
+    save_file.write(_db_server_address);
+    save_file.write(_db_server_login);
+    save_file.write(_db_server_password);
+    save_file.write(_db_database_name);
 }
 
 auto Application::addToBuffer(char* buffer, size_t& cur_msg_len, int value) const -> void

@@ -90,7 +90,8 @@ auto Utils::getPassword(std::string& password, const std::string& text) -> void
 {
 #if defined(_WIN32)
 
-    std::cout << std::endl << text;
+    //std::cout << std::endl;
+    std::cout << text;
     std::cout << BOLDGREEN;
 
     auto c{' '};

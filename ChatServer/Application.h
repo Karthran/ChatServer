@@ -26,33 +26,16 @@ private:
     std::vector<int> _signed_user{};
     std::map<int, std::string> _connected_user_id{};
 
-    // std::vector<void(Application::*)(char* message, size_t message_size, int thread_num)> _func_ptr{};
+    std::string _db_server_address{};
+    std::string _db_server_login{};
+    std::string _db_server_password{};
+    std::string _db_database_name{};
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;
 
     auto onCheckSize(char* message, int thread_num) const -> void;
-    auto onCheckEmail(char* message, int thread_num) -> void;
-    auto onCheckLogin(char* message, int thread_num) -> void;
-    auto onRegistration(char* message, int thread_num) -> void;
-    auto onSignIn(char* message, int thread_num) -> void;
-    auto onCommonChatGetMessages(char* message, int thread_num) -> void;
-    auto onCommonChatAddMessage(char* message, int thread_num) -> void;
-    auto onCommonChatCheckMessage(char* message, int thread_num) -> void;
-    auto onPrivateChatCheckMessage(char* message, int thread_num) -> void;
-    auto onCommonChatEditMessage(char* message, int thread_num) -> void;
-    auto onCommonChatDeleteMessage(char* message, int thread_num) -> void;
-    auto onNewMessagesInCommonChat(char* message, int thread_num) -> void;
-    auto onNewMessagesInPrivateChat(char* message, int thread_num) -> void;
-    auto onViewUsersIDNameSurname(char* message, int thread_num) -> void;
-    auto onViewUsersWithNewMessages(char* message, int thread_num) -> void;
-    auto onViewUsersWithPrivateChat(char* message, int thread_num) -> void;
-    auto onGetPrivateChatID(char* message, int thread_num) -> void;
-    auto onPrivateChatAddMessage(char* message, int thread_num) -> void;
-    auto onPrivateChatGetMessages(char* message, int thread_num) -> void;
-    auto onPrivateChatEditMessages(char* message, int thread_num) -> void;
-    auto onPrivateChatDeleteMessages(char* message, int thread_num) -> void;
-
+    auto exchangeWithClient(void (Application::*func)(char*, size_t, int), char* message, int thread_num) -> void;
     auto onStop(char* message, int thread_num) -> void;
     auto onError(char* message, int thread_num) const -> void;
 
@@ -84,5 +67,5 @@ private:
     auto privateChatDeleteMessages(char* message, size_t message_size, int thread_num) -> void;
 
     auto createDataBases() -> void;
-    auto exchangeWithClient(void(Application::*func)(char* , size_t , int ), char* message, int thread_num) -> void;
+    auto inputDBServerData() -> void;
 };
