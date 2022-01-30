@@ -3,6 +3,7 @@
 #include <thread>
 #include <string>
 #include <memory>
+#include <mutex>
 
 const int DEFAULT_BUFLEN = 16384;
 
@@ -39,6 +40,7 @@ private:
 
     int thread_count{0};
     volatile bool continue_flag{true};
+    std::mutex _mutex;
 
 #ifdef _WIN32
     auto server_thread(int thread_number) -> void;

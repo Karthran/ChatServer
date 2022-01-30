@@ -8,6 +8,7 @@ class File
 public:
 #if defined(_WIN32)
     File(const std::string& file_name, std::fstream::_Openmode flags = std::fstream::out)
+   //File(const std::string& file_name, std::ios flags = std::ios::out)
 #elif defined(__linux__)
     File(const std::string& file_name, std::ios_base::openmode flags = std::fstream::out)
 #endif

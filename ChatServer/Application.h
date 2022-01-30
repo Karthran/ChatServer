@@ -3,9 +3,10 @@
 #include <memory>
 #include <vector>
 #include <map>
+#include <mutex>
 #include "DataBase.h"
 #include "Server.h"
-
+#include "Logger.h"
 class Application
 {
 public:
@@ -17,6 +18,7 @@ public:
 private:
     std::unique_ptr<Server> _server{};
     std::unique_ptr<DataBase> _data_base{};
+    std::unique_ptr<Logger> _logger{};
 
     int _current_user_number{0};
     int _current_chat_number{0};
@@ -30,6 +32,9 @@ private:
     std::string _db_server_login{};
     std::string _db_server_password{};
     std::string _db_database_name{};
+
+    std::mutex _db_mutex{};
+
 
     /* string_arr{0] is Menu Name , printed with underline and without number*/
     auto menu(std::string* string_arr, int size) const -> int;

@@ -28,6 +28,8 @@ auto Application::run() -> void
 {
     Utils::printOSVersion();
 
+   _logger = std::make_unique<Logger>(_self_path + "log.txt");
+
     inputDBServerData();
 
     std::cout << std::endl << BOLDYELLOW << UNDER_LINE << "Wellcome to Console Chat Dedicated Server!" << RESET << std::endl;
@@ -47,9 +49,11 @@ auto Application::run() -> void
         if (msg == "end")
         {
             _server->setContinueFlag(false);
+            _logger->stopLogger();
             break;
         }
     }
+    //std::this_thread::sleep_for(std::chrono::microseconds(1000));
     return;
 }
 
@@ -301,7 +305,7 @@ auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread
         if (check_hash != hash) result = RETURN_ERROR.c_str();
 
         _connected_user_id[thread_num] = std::move(id);
-
+        //_logger->addThread(_connected_user_id[thread_num], thread_num);
         // auto err_ptr{_data_base->getMySQLError()};
         // std::cout << err_ptr << std::endl;
     }
@@ -365,6 +369,8 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
 auto Application::commonChatAddMessage(char* message, size_t message_size, int thread_num) -> void
 {
     std::string chat_message{message};
+
+    _logger->saveLog(_connected_user_id[thread_num], chat_message);
 
     std::string query_str = "INSERT INTO CommonMessages (user_id, message, creation_date)"
                             "VALUES('" +
@@ -888,7 +894,10 @@ auto Application::exchangeWithClient(void (Application::*func)(char*, size_t, in
     {
         case OperationCode::CHECK_SIZE:
         {
-            (this->*func)(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            {
+                std::lock_guard<std::mutex> lock(_db_mutex);
+                (this->*func)(message + 2 * sizeof(int), _server->getMsgFromClientSize(thread_num), thread_num);
+            }
             _server->setBufferSize(thread_num, _server->getCashMessageSizeRef(thread_num));
             _server->getMessageSizeRef(thread_num) = 0;
             addToBuffer(message, _server->getMessageSizeRef(thread_num), static_cast<int>(OperationCode::CHECK_SIZE));
