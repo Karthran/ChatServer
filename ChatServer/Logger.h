@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <fstream>
+#include <thread>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
