@@ -24,6 +24,7 @@ auto Logger::write_log(const std::string& user_id, const std::string& message) -
 
 auto Logger::read_log(std::string& user_id, std::string& message, int message_index) -> void
 {
+    auto index{0};
     user_id.clear();
     message.clear();
     auto msg_size{0};
@@ -36,6 +37,13 @@ auto Logger::read_log(std::string& user_id, std::string& message, int message_in
         _filestream.getline(str.get(), msg_size + 2, '\n');                             //
         _file_mutex.unlock_shared();
         message = (str.get() + 1);  // skip the separator
+        ++index;
+        if (index == message_index) break;
+    }
+    if (_filestream.eof()) 
+    {
+        user_id.clear();
+        message.clear();
     }
 }
 
@@ -45,8 +53,8 @@ auto Logger::saveLog(const std::string& user_id, const std::string& message) -> 
     t.join();
 }
 
-auto Logger::loadLog(std::string& user_id, std::string& message) -> void
+auto Logger::loadLog(std::string& user_id, std::string& message, int message_index) -> void
 {
-    auto t = std::thread(&Logger::read_log, this, std::ref(user_id), std::ref(message));
+    auto t = std::thread(&Logger::read_log, this, std::ref(user_id), std::ref(message), message_index);
     t.join();
 }

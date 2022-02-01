@@ -16,7 +16,7 @@ public:
     ~Logger();
     auto fileRef() -> std::fstream& { return _filestream; }
     auto saveLog(const std::string& user_id, const std::string& message) -> void;
-    auto loadLog(std::string& user_id, std::string& message) -> void;
+    auto loadLog(std::string& user_id, std::string& message, int message_index) -> void;
 
     auto getOutMessageReady(int server_thread_num) -> bool { return _out_msg_ready[server_thread_num]; }
     auto setOutMessageReady(int server_thread_num, bool flag) -> void { _out_msg_ready[server_thread_num] = flag; }

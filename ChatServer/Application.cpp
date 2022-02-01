@@ -683,6 +683,8 @@ auto Application::privateChatAddMessage(char* message, size_t message_size, int 
     std::string chat_message{message};
     std::string chat_id{message + chat_message.size() + 1};
 
+    _logger->saveLog(_connected_user_id[thread_num], chat_message);
+
     std::string query_str = "INSERT INTO Messages (chat_id, user_id, message, creation_date, status)"
                             "VALUES('" +
                             chat_id + "', '" + _connected_user_id[thread_num] + "', '" + message + "', now(), 'delivery')";
