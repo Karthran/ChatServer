@@ -6,12 +6,7 @@
 
 #include <iostream>
 #include <cstring>
-//#include <cassert>
-//#include <iomanip>
 #include <exception>
-//#include <fstream>
-//#include <sstream>
-//#include <mutex>
 
 #include "Application.h"
 #include "Server.h"
@@ -28,7 +23,7 @@ auto Application::run() -> void
 {
     Utils::printOSVersion();
 
-   _logger = std::make_unique<Logger>(_self_path + "log.txt");
+    _logger = std::make_unique<Logger>(_self_path + "log.txt");
 
     inputDBServerData();
 
@@ -53,7 +48,6 @@ auto Application::run() -> void
             break;
         }
     }
-    //std::this_thread::sleep_for(std::chrono::microseconds(1000));
     return;
 }
 
@@ -181,8 +175,6 @@ auto Application::checkLogin(char* login, size_t login_size, int thread_num) -> 
     login[login_size] = '\0';
     std::string query_str = "SELECT id FROM Users WHERE login = lower('" + std::string(login) + "')";
 
-    //   std::cout << login << std::endl;
-
     std::string query_result{};
     int row_num{0};
     int column_num{0};
@@ -305,9 +297,6 @@ auto Application::signin(char* signin_data, size_t signin_gdata_size, int thread
         if (check_hash != hash) result = RETURN_ERROR.c_str();
 
         _connected_user_id[thread_num] = std::move(id);
-        //_logger->addThread(_connected_user_id[thread_num], thread_num);
-        // auto err_ptr{_data_base->getMySQLError()};
-        // std::cout << err_ptr << std::endl;
     }
     else
     {
@@ -349,9 +338,6 @@ auto Application::commonChatGetMessages(char* data, size_t data_size, int thread
     auto new_column_num{0};
     _data_base->getQueryResult(new_msg, new_row_num, new_column_num);
 
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
-
     _server->resizeCashMessageBuffer(thread_num, old_msg.size() + new_msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::COMMON_CHAT_GET_MESSAGES));
@@ -381,7 +367,6 @@ auto Application::commonChatAddMessage(char* message, size_t message_size, int t
     if (auto err_ptr{_data_base->getMySQLError()})
     {
         result = RETURN_ERROR.c_str();
-        // std::cout << err_ptr << std::endl;
     }
     else
     {
@@ -407,9 +392,6 @@ auto Application::commonChatCheckMessage(char* message, size_t message_size, int
     int msg_column_num{0};
     _data_base->getQueryResult(msg, msg_row_num, msg_column_num);
 
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
-
     _server->resizeCashMessageBuffer(thread_num, msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::COMMON_CHAT_CHECK_MESSAGE));
@@ -433,9 +415,6 @@ auto Application::privateChatCheckMessage(char* message, size_t message_size, in
     int msg_column_num{0};
     _data_base->getQueryResult(msg, msg_row_num, msg_column_num);
 
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
-
     _server->resizeCashMessageBuffer(thread_num, msg.size() + HEADER_SIZE);
     _server->getCashMessageSizeRef(thread_num) = 0;
     addToBuffer(_server->getCashMessagePtr(thread_num), _server->getCashMessageSizeRef(thread_num), static_cast<int>(OperationCode::COMMON_CHAT_CHECK_MESSAGE));
@@ -453,15 +432,11 @@ auto Application::commonChatEditMessage(char* message, size_t message_size, int 
                             "' AND user_id = '" + _connected_user_id[thread_num] + "'";
     _data_base->query(query_msg.c_str());
 
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
-
     const char* result{nullptr};
 
     if (auto err_ptr{_data_base->getMySQLError()})
     {
         result = RETURN_ERROR.c_str();
-        //      std::cout << err_ptr << std::endl;
     }
     else
     {
@@ -489,9 +464,6 @@ auto Application::commonChatDeleteMessage(char* message, size_t message_size, in
 
     query_msg = "ALTER TABLE CommonMessages AUTO_INCREMENT = 1";
     _data_base->query(query_msg.c_str());
-
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
 }
 
 auto Application::newMessagesInCommonChat(char* message, size_t message_size, int thread_num) -> void
@@ -530,9 +502,6 @@ auto Application::newMessagesInPrivateChat(char* message, size_t message_size, i
                             _connected_user_id[thread_num] + "' OR second_user_id = '" + _connected_user_id[thread_num] + "') AND user_id != '" +
                             _connected_user_id[thread_num] + "' AND status != 'done'  GROUP BY user_id";
     _data_base->query(query_str.c_str());
-
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
 
     std::string new_msg{};
     auto new_row_num{0};
@@ -597,9 +566,6 @@ auto Application::viewUsersWithPrivateChat(char* message, size_t message_size, i
                             _connected_user_id[thread_num] + "'";
 
     _data_base->query(query_str.c_str());
-
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
 
     std::string users_data{};
     auto data_row_num{0};
@@ -690,9 +656,6 @@ auto Application::privateChatAddMessage(char* message, size_t message_size, int 
                             chat_id + "', '" + _connected_user_id[thread_num] + "', '" + message + "', now(), 'delivery')";
     _data_base->query(query_str.c_str());
 
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
-
     const char* result{nullptr};
     if (auto err_ptr{_data_base->getMySQLError()})
     {
@@ -746,9 +709,6 @@ auto Application::privateChatGetMessages(char* message, size_t message_size, int
         query_str = "UPDATE Messages SET status = 'done' WHERE user_id != '" + _connected_user_id[thread_num] + "' AND chat_id = '" + chat_id + "'";
         _data_base->query(query_str.c_str());
 
-        // auto err_ptr{_data_base->getMySQLError()};
-        // std::cout << err_ptr << std::endl;
-
         return;
     }
 
@@ -783,9 +743,6 @@ auto Application::privateChatGetMessages(char* message, size_t message_size, int
 
     query_str = "UPDATE Messages SET status = 'done' WHERE user_id != '" + _connected_user_id[thread_num] + "' AND chat_id = '" + chat_id + "'";
     _data_base->query(query_str.c_str());
-
-    // auto err_ptr{_data_base->getMySQLError()};
-    // std::cout << err_ptr << std::endl;
 }
 
 auto Application::privateChatEditMessages(char* message, size_t message_size, int thread_num) -> void
@@ -842,8 +799,7 @@ auto Application::privateChatDeleteMessages(char* message, size_t message_size, 
 
 auto Application::createDataBases() -> void
 {
-    //_data_base->query("DROP TABLE Users");
-    _data_base->query("CREATE TABLE Users (id INT AUTO_INCREMENT PRIMARY KEY,"
+    _data_base->query("CREATE TABLE IF NOT EXISTS Users (id INT AUTO_INCREMENT PRIMARY KEY,"
                       "name VARCHAR(255) NOT NULL,"
                       "surname VARCHAR(255) NOT NULL,"
                       "login VARCHAR(255) NOT NULL UNIQUE,"
@@ -852,16 +808,15 @@ auto Application::createDataBases() -> void
                       "viewdate DATETIME NOT NULL,"
                       "deleted INT DEFAULT 0)");
 
-    //_data_base->query("DROP TABLE Hash");
-    _data_base->query("CREATE TABLE Hash (id INT REFERENCES Users(id),"
+    _data_base->query("CREATE TABLE IF NOT EXISTS Hash (id INT REFERENCES Users(id),"
                       "hash VARCHAR(64) NOT NULL,"
                       "salt VARCHAR(64) NOT NULL)");
 
-    _data_base->query("CREATE TABLE Chat (id INT AUTO_INCREMENT PRIMARY KEY,"
+    _data_base->query("CREATE TABLE IF NOT EXISTS Chat (id INT AUTO_INCREMENT PRIMARY KEY,"
                       "first_user_id INT REFERENCES Users(id),"
                       "second_user_id INT REFERENCES Users(id))");
 
-    _data_base->query("CREATE TABLE Messages (id INT AUTO_INCREMENT PRIMARY KEY,"
+    _data_base->query("CREATE TABLE IF NOT EXISTS Messages (id INT AUTO_INCREMENT PRIMARY KEY,"
                       "chat_id INT REFERENCES Chat(id),"
                       "user_id INT REFERENCES Users(id),"
                       "message VARCHAR(255) NOT NULL,"
@@ -870,20 +825,13 @@ auto Application::createDataBases() -> void
                       "editing_date DATETIME ,"
                       "status VARCHAR(100) NOT NULL CHECK( status IN ('done', 'in progress', 'delivery')))");
 
-    _data_base->query("CREATE TABLE CommonMessages (id INT AUTO_INCREMENT PRIMARY KEY,"
+    _data_base->query("CREATE TABLE IF NOT EXISTS CommonMessages (id INT AUTO_INCREMENT PRIMARY KEY,"
                       "user_id INT REFERENCES Users(id),"
                       "message VARCHAR(255) NOT NULL,"
                       "creation_date DATETIME NOT NULL,"
                       "edited INT DEFAULT 0,"
                       "editing_date DATETIME )");
 
-    // _data_base->query("INSERT INTO Users (name,surname,login,email,regdate)"
-    //" VALUES"
-    //"('Lida', 'Moroz', lower('Queen99'), lower('Lida_moroz@gmai.com'), now())");
-    //"('Svetlana', 'Sokolova', lower('Sun7856'), lower('Sokolova@gmai.com'), now())");
-    //"('Иван', 'Суржиков', lower('Inav777'), lower('Иван_Суржиков@почта.ру'), now())");
-    //"('Проверка_Поля_на_достаточно_длинную_и_нестандартную_фамилию', 'такое_же_длинное_имя_с_нестандартными_символами_#!@$#?\_', lower('Login'),
-    // lower('Почта@русская.Ру'), now())");
 }
 
 auto Application::exchangeWithClient(void (Application::*func)(char*, size_t, int), char* message, int thread_num) -> void
