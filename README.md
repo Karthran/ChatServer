@@ -25,5 +25,5 @@ class Application - Основной класс обеспечивающий р�
                     
 class FileUtils   - Файловый ввод-вывод.
 
-Сборка под Linux:   g++ -o server $(mysql_config --cflags) *.cpp $(mysql_config --libs) -pthread
+Сборка под Linux:   g++ -o server $(mysql_config --cflags) *.cpp $(mysql_config --libs) -pthread -std=c++17
 
